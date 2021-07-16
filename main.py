@@ -16,13 +16,11 @@ def calculate_rsi(df_column, window=14):
 
     positives = delta.copy()
     negatives = delta.copy()
-
     positives[positives < 0] = 0
     negatives[negatives > 0] = 0
 
     rs = positives.rolling(window).mean() / abs(negatives.rolling(window).mean())
     rsi = 100 - 100 / (1 + rs)
-
     return rsi
 
 
@@ -44,27 +42,24 @@ def create_dataframe(symbol, interval, limit):
     return df
 
 
-def rsi_strategy(rsi):
-    pass
-
-
 trader = TraderAPI()
 wallet = Portfolio(250)
-long_term = LongTermStrategy(MA1, MA2)
-short_term = ShortTermStrategy(MA1, MA2)
+crossing_sma = CrossingSMA(MA1, MA2)
+bottom_rsi = BottomRSI(MA1, MA2)
 
 counter = 0
 while True:
-    df_vet_30m = create_dataframe(wallet.assets[0], SHORT_INTERVAL, MA2)
-    short_term.check_for_signal(df_vet_30m)
-    print(f"<--------------------RETRIEVING DATA FOR SHORT TERM STRATEGY------------------------>:\n"
-          f"{df_vet_30m.iloc[[-1]]}")
-    if counter % 8 == 0:
-        df_vet_4h = create_dataframe(wallet.assets[0], LONG_INTERVAL, MA2)
-        long_term.check_for_signal(df_vet_4h)
-        counter = 0
-        print(f"<--------------------RETRIEVING DATA FOR LONG TERM STRATEGY------------------------->:\n"
-              f"{df_vet_4h.iloc[[-1]]}")
+    for asset in wallet.assets:
+        df_asset_30m = create_dataframe(asset, SHORT_INTERVAL, MA2)
+        print(f"<--------------------RETRIEVING DATA FOR {asset} SHORT TERM STRATEGY------------------------>:\n"
+              f"{df_asset_30m.iloc[[-1]]}")
+        bottom_rsi.check_for_signal(df_asset_30m)
+        if counter % 8 == 0:
+            df_asset_4h = create_dataframe(asset, LONG_INTERVAL, MA2)
+            counter = 0
+            print(f"<--------------------RETRIEVING DATA FOR {asset} LONG TERM STRATEGY------------------------->:\n"
+                  f"{df_asset_4h.iloc[[-1]]}")
+            crossing_sma.check_for_signal(df_asset_4h)
 
     time.sleep(1800)
     counter += 1

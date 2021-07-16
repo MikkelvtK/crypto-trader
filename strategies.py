@@ -3,15 +3,13 @@ import pandas as pd
 LOG_COLUMNS = ["Timestamp", "Asset", "Action", "Price", "Volume", "Value", "Strategy"]
 
 
-class LongTermStrategy:
+class CrossingSMA:
 
     def __init__(self, ma1, ma2):
-        # self.wallet = wallet
-        # self.asset = asset
         self.buy = False
         self.ma1 = ma1
         self.ma2 = ma2
-        # self.engine = db_connection
+        self.strategy = "long term strategy"
 
     def check_for_signal(self, df):
         # current_price = df["Close"].iloc[-1]
@@ -24,24 +22,23 @@ class LongTermStrategy:
             self.buy = False
 
 
-class ShortTermStrategy:
+class BottomRSI:
 
     def __init__(self, ma1, ma2):
         self.buy = False
         self.ma1 = ma1
         self.ma2 = ma2
         self.counter = 0
+        self.strategy = "short term strategy"
 
     def check_for_signal(self, df):
-        current_price = df["Price"].iloc[-1]
 
         if self.buy is True:
             self.counter += 1
 
-        if df["RSI"].iloc[-1] < 25 and self.buy is False:
+        if df["RSI"].iloc[-1] < 30 and self.buy is False:
             print("BUY SIGNAL")
             self.buy = True
-        elif df["RSI"].iloc[-1] > 40 or (self.counter >= 5 and current_price > df["Price"].iloc[-self.counter]):
-            if self.buy is True:
-                print("SELL SIGNAL")
-                self.buy = False
+        elif (df["RSI"].iloc[-1] > 40 or self.counter == 5) and self.buy is True:
+            print("SELL SIGNAL")
+            self.buy = False
