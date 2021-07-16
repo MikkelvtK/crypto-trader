@@ -1,17 +1,14 @@
 import requests
 import hashlib
 import hmac
-import json
 import time
+import os
 
 
 class TraderAPI:
     def __init__(self):
-        with open("config.json") as f:
-            keys = json.load(f)
-
-        self.key = keys["api_key"]
-        self.secret = keys["api_secret"]
+        self.key = os.environ.get("apiKey")
+        self.secret = os.environ.get("apiSecret")
         self.header = {"X-MBX-APIKEY": self.key}
         self.endpoint = "https://api.binance.com"
 
