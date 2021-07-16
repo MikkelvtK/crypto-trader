@@ -1,6 +1,6 @@
+import pandas as pd
 import time
-import hashlib
-import hmac
+import sqlalchemy
 from trader import TraderAPI
 from wallet import Portfolio
 from strategies import *
@@ -9,6 +9,7 @@ MA1 = 50
 MA2 = 200
 SHORT_INTERVAL = "30m"
 LONG_INTERVAL = "4h"
+LOG_COLUMNS = ["Timestamp", "Asset", "Action", "Price", "Volume", "Value", "Strategy"]
 
 
 def calculate_rsi(df_column, window=14):
@@ -30,7 +31,6 @@ def current_ms_time():
 
 def create_dataframe(symbol, interval, limit):
     df = pd.DataFrame(trader.get_history(symbol, interval, limit=limit))
-    df = df.drop(columns=df.iloc[:, 1:4].columns)
     df = df.drop(columns=df.iloc[:, 2:].columns)
     df.columns = ["Open Time", "Price"]
     df = df.set_index("Open Time")
@@ -43,35 +43,29 @@ def create_dataframe(symbol, interval, limit):
 
 
 trader = TraderAPI()
-wallet = Portfolio(250)
+wallet = Portfolio(trader)
 crossing_sma = CrossingSMA(MA1, MA2)
 bottom_rsi = BottomRSI(MA1, MA2)
 
 counter = 0
 while True:
-    for asset in wallet.assets:
-        df_asset_30m = create_dataframe(asset, SHORT_INTERVAL, MA2)
-        print(f"<--------------------RETRIEVING DATA FOR {asset} SHORT TERM STRATEGY------------------------>:\n"
-              f"{df_asset_30m.iloc[[-1]]}")
-        bottom_rsi.check_for_signal(df_asset_30m)
-        if counter % 8 == 0:
-            df_asset_4h = create_dataframe(asset, LONG_INTERVAL, MA2)
-            counter = 0
-            print(f"<--------------------RETRIEVING DATA FOR {asset} LONG TERM STRATEGY------------------------->:\n"
-                  f"{df_asset_4h.iloc[[-1]]}")
-            crossing_sma.check_for_signal(df_asset_4h)
 
-    time.sleep(1800)
-    counter += 1
+    current_time = current_ms_time()
 
+    if (current_time / 1000) % 1800 == 0:
+        time.sleep(50)
 
+        for asset in wallet.assets:
+            df_asset_30m = create_dataframe(asset, SHORT_INTERVAL, MA2)
+            print(f"<--------------------RETRIEVING DATA FOR {asset} SHORT TERM STRATEGY----------------------->:\n"
+                  f"{df_asset_30m.iloc[[-1]]}")
+            action = bottom_rsi.check_for_signal(df_asset_30m)
+            if counter % 8 == 0:
+                df_asset_4h = create_dataframe(asset, LONG_INTERVAL, MA2)
+                counter = 0
+                print(f"<--------------------RETRIEVING DATA FOR {asset} LONG TERM STRATEGY------------------------>:\n"
+                      f"{df_asset_4h.iloc[[-1]]}")
+                crossing_sma.check_for_signal(df_asset_4h)
 
-
-
-
-# query_string = f'timestamp={unix}'
-# secret = ''
-
-# signature = hmac.new(secret.encode('utf-8'), query_string.encode('utf-8'), hashlib.sha256).hexdigest()
-
-
+        time.sleep(60)
+        counter += 1

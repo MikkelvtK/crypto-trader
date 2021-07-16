@@ -1,11 +1,10 @@
-import pandas as pd
-
 LOG_COLUMNS = ["Timestamp", "Asset", "Action", "Price", "Volume", "Value", "Strategy"]
 
 
 class CrossingSMA:
 
     def __init__(self, ma1, ma2):
+        self.__name__ = "Crossing SMA"
         self.buy = False
         self.ma1 = ma1
         self.ma2 = ma2
@@ -25,6 +24,7 @@ class CrossingSMA:
 class BottomRSI:
 
     def __init__(self, ma1, ma2):
+        self.__name__ = "Buy the RSI dip"
         self.buy = False
         self.ma1 = ma1
         self.ma2 = ma2
