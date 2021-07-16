@@ -14,10 +14,8 @@ class CrossingSMA:
         # current_price = df["Close"].iloc[-1]
 
         if df[f"SMA_{self.ma1}"].iloc[-1] > df[f"SMA_{self.ma2}"].iloc[-1] and self.buy is False:
-            print("BUY SIGNAL")
             self.buy = True
         elif df[f"SMA_{self.ma1}"].iloc[-1] < df[f"SMA_{self.ma2}"].iloc[-1] and self.buy is True:
-            print("SELL SIGNAL")
             self.buy = False
 
 

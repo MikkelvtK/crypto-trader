@@ -12,6 +12,7 @@ class TraderAPI:
 
         self.key = keys["api_key"]
         self.secret = keys["api_secret"]
+        self.header = {"X-MBX-APIKEY": self.key}
         self.endpoint = "https://api.binance.com"
 
     def get_latest_price(self, asset):
@@ -21,18 +22,13 @@ class TraderAPI:
     def get_history(self, symbol, interval, limit=1000):
         candlestick_data = "/api/v3/klines"
 
-        header = {
-            "apiKey": self.key,
-            "apiSecret": self.secret
-        }
-
         # Define parameters
         params = {
             "symbol": symbol,
             "interval": interval,
             "limit": limit,
         }
-        return requests.get(self.endpoint + candlestick_data, params=params, headers=header).json()
+        return requests.get(self.endpoint + candlestick_data, params=params, headers=self.header).json()
 
     def get_balance(self):
         ms_time = round(time.time() * 1000)
@@ -40,14 +36,35 @@ class TraderAPI:
         query_string = f"timestamp={ms_time}"
         signature = hmac.new(self.secret.encode('utf-8'), query_string.encode('utf-8'), hashlib.sha256).hexdigest()
 
-        header = {"X-MBX-APIKEY": self.key}
         params = {
             "timestamp": ms_time,
             "signature": signature,
         }
 
-        response = requests.get(self.endpoint + request, params=params, headers=header).json()
+        response = requests.get(self.endpoint + request, params=params, headers=self.header).json()
         for balance in response["balances"]:
             if balance["asset"] == "USD":
                 return balance["free"]
         return 0
+
+    def place_buy(self, asset, quantity):
+        side = "BUY"
+        type_ = "MARKET"
+        request = "/api/v3/order/test"
+        ms_time = round(time.time() * 1000)
+        query_string = f"symbol={asset}&side={side}&type={type_}&quoteOrderQty={quantity}&timestamp={ms_time}"
+        signature = hmac.new(self.secret.encode('utf-8'), query_string.encode('utf-8'), hashlib.sha256).hexdigest()
+        params = {
+            "symbol": asset,
+            "side": side,
+            "type": type_,
+            "quoteOrderQty": quantity,
+            "timestamp": ms_time,
+            "signature": signature,
+        }
+        return requests.post(self.endpoint + request, params=params, headers=self.header).json()
+
+
+if __name__ == "__main__":
+    trader = TraderAPI()
+    print(trader.place_buy("VETUSDT", 50))
