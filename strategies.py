@@ -1,6 +1,3 @@
-LOG_COLUMNS = ["Timestamp", "Asset", "Action", "Price", "Volume", "Value", "Strategy"]
-
-
 class CrossingSMA:
 
     def __init__(self, ma1, ma2):
@@ -11,12 +8,12 @@ class CrossingSMA:
         self.strategy = "long term strategy"
 
     def check_for_signal(self, df):
-        # current_price = df["Close"].iloc[-1]
-
         if df[f"SMA_{self.ma1}"].iloc[-1] > df[f"SMA_{self.ma2}"].iloc[-1] and self.buy is False:
             self.buy = True
+            return "BUY"
         elif df[f"SMA_{self.ma1}"].iloc[-1] < df[f"SMA_{self.ma2}"].iloc[-1] and self.buy is True:
             self.buy = False
+            return "SELL"
 
 
 class BottomRSI:
@@ -30,13 +27,15 @@ class BottomRSI:
         self.strategy = "short term strategy"
 
     def check_for_signal(self, df):
+        current_price = df["Price"].iloc[-1]
 
         if self.buy is True:
             self.counter += 1
 
         if df["RSI"].iloc[-1] < 30 and self.buy is False:
-            print("BUY SIGNAL")
             self.buy = True
-        elif (df["RSI"].iloc[-1] > 40 or self.counter == 5) and self.buy is True:
-            print("SELL SIGNAL")
+            return "BUY"
+        elif ((df["RSI"].iloc[-1] > 40 or self.counter == 5 or current_price < df["Trailing Stop"].iloc[-1]) and
+              self.buy is True):
             self.buy = False
+            return "SELL"

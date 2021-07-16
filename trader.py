@@ -47,24 +47,23 @@ class TraderAPI:
                 return balance["free"]
         return 0
 
-    def place_buy(self, asset, quantity):
-        side = "BUY"
+    def post_order(self, asset, quantity, action):
+        if action == "BUY":
+            quantity_type = "quoteOrderQty"
+        else:
+            quantity_type = "quantity"
+        side = action
         type_ = "MARKET"
-        request = "/api/v3/order/test"
+        request = "/api/v3/order"
         ms_time = round(time.time() * 1000)
-        query_string = f"symbol={asset}&side={side}&type={type_}&quoteOrderQty={quantity}&timestamp={ms_time}"
+        query_string = f"symbol={asset}&side={side}&type={type_}&{quantity_type}={quantity}&timestamp={ms_time}"
         signature = hmac.new(self.secret.encode('utf-8'), query_string.encode('utf-8'), hashlib.sha256).hexdigest()
         params = {
             "symbol": asset,
             "side": side,
             "type": type_,
-            "quoteOrderQty": quantity,
+            quantity_type: quantity,
             "timestamp": ms_time,
             "signature": signature,
         }
         return requests.post(self.endpoint + request, params=params, headers=self.header).json()
-
-
-if __name__ == "__main__":
-    trader = TraderAPI()
-    print(trader.place_buy("VETUSDT", 50))
