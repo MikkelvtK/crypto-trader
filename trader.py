@@ -4,7 +4,7 @@ import hmac
 import json
 
 
-class Trader:
+class TraderAPI:
     def __init__(self):
         with open("config.json") as f:
             keys = json.load(f)
@@ -19,6 +19,7 @@ class Trader:
 
     def get_history(self, symbol, interval, limit=1000):
         candlestick_data = "/api/v3/klines"
+
         header = {
             "apiKey": self.key,
             "apiSecret": self.secret
@@ -31,3 +32,5 @@ class Trader:
             "limit": limit,
         }
         return requests.get(self.endpoint + candlestick_data, params=params, headers=header).json()
+
+
