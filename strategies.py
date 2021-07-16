@@ -27,15 +27,13 @@ class BottomRSI:
         self.strategy = "short term strategy"
 
     def check_for_signal(self, df):
-        current_price = df["Price"].iloc[-1]
-
         if self.buy is True:
             self.counter += 1
 
         if df["RSI"].iloc[-1] < 30 and self.buy is False:
             self.buy = True
             return "BUY"
-        elif ((df["RSI"].iloc[-1] > 40 or self.counter == 5 or current_price < df["Trailing Stop"].iloc[-1]) and
+        elif ((df["RSI"].iloc[-1] > 40 or self.counter == 5) and
               self.buy is True):
             self.buy = False
             return "SELL"

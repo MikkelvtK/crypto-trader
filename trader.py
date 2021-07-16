@@ -19,7 +19,6 @@ class TraderAPI:
     def get_history(self, symbol, interval, limit=1000):
         candlestick_data = "/api/v3/klines"
 
-        # Define parameters
         params = {
             "symbol": symbol,
             "interval": interval,
