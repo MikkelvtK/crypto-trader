@@ -39,7 +39,7 @@ class TraderAPI:
 
         response = requests.get(self.endpoint + request, params=params, headers=self.header).json()
         for balance in response["balances"]:
-            if balance["asset"] == "USD":
+            if balance["asset"] == "EUR":
                 return balance["free"]
         return 0
 
