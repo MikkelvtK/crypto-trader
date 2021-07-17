@@ -1,1 +1,1 @@
-web: gunicorn main:quiet-journey-47865
+web gunicorn main.py
