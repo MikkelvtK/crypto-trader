@@ -1,6 +1,6 @@
 import pandas as pd
 import time
-import sqlalchemy
+# import sqlalchemy
 from trader import TraderAPI
 from wallet import Portfolio
 from strategies import *
@@ -54,7 +54,7 @@ trader = TraderAPI()
 portfolio = Portfolio(trader)
 crossing_sma = CrossingSMA(MA1, MA2)
 bottom_rsi = BottomRSI(MA1, MA2)
-engine = sqlalchemy.create_engine("sqlite:///data/trade_log.db")
+# engine = sqlalchemy.create_engine("sqlite:///data/trade_log.db")
 
 counter = 0
 while True:
@@ -77,13 +77,13 @@ while True:
                     order_price = portfolio.balance * 0.34
 
                 receipt = trader.post_order(asset, order_price, action)
-                process_order(receipt, engine, "RSI buy")
+                # process_order(receipt, engine, "RSI buy")
                 portfolio.coins[f"{asset} short term"] = int(receipt["price"]) * order_price
                 portfolio.get_balance()
 
             elif action == "SELL":
                 receipt = trader.post_order(asset, portfolio.coins[f"{asset} short term"], action)
-                process_order(receipt, engine, "RSI sell")
+                # process_order(receipt, engine, "RSI sell")
                 portfolio.coins[f"{asset} short term"] = 0
                 portfolio.get_balance()
 
@@ -101,13 +101,13 @@ while True:
                         order_price = portfolio.balance * 0.66
 
                     receipt = trader.post_order(asset, order_price, action)
-                    process_order(receipt, engine, "Golden cross")
+                    # process_order(receipt, engine, "Golden cross")
                     portfolio.coins[f"{asset} long term"] = int(receipt["price"]) * order_price
                     portfolio.get_balance()
 
                 elif action == "SELL":
                     receipt = trader.post_order(asset, portfolio.coins[f"{asset} long term"], action)
-                    process_order(receipt, engine, "Death cross")
+                    # process_order(receipt, engine, "Death cross")
                     portfolio.coins[f"{asset} long term"] = 0
                     portfolio.get_balance()
 
