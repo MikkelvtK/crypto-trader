@@ -1,1 +1,1 @@
-web: python main.py
+hobby: python main.py
