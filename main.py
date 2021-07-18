@@ -77,7 +77,7 @@ while True:
 
                 receipt = trader.post_order(asset, order_price, action)
                 # process_order(receipt, engine, "RSI buy")
-                portfolio.coins[f"{asset} short term"] = int(receipt["price"]) * order_price
+                portfolio.coins[f"{asset} short term"] = float(receipt["price"]) * order_price
                 portfolio.get_balance()
 
             elif action == "SELL":
@@ -102,7 +102,7 @@ while True:
 
                     receipt = trader.post_order(asset, order_price, action)
                     # process_order(receipt, engine, "Golden cross")
-                    portfolio.coins[f"{asset} long term"] = int(receipt["price"]) * order_price
+                    portfolio.coins[f"{asset} long term"] = float(receipt["price"]) * order_price
                     portfolio.get_balance()
 
                 elif action == "SELL":
