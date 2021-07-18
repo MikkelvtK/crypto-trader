@@ -41,7 +41,6 @@ class TraderAPI:
         for balance in response["balances"]:
             if balance["asset"] == "EUR":
                 return balance["free"]
-        return 0
 
     def post_order(self, asset, quantity, action):
         if action == "BUY":

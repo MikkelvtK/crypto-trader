@@ -39,8 +39,6 @@ def create_dataframe(symbol, interval, limit):
     df[f"SMA_{MA1}"] = df["Price"].rolling(window=MA1).mean()
     df[f"SMA_{MA2}"] = df["Price"].rolling(window=MA2).mean()
     df["RSI"] = calculate_rsi(df["Price"])
-    df["Highest"] = df["Price"].cummax()
-    df["Trailing Stop"] = df["Highest"] * 0.98
     return df
 
 
@@ -62,7 +60,7 @@ while True:
     current_time = current_ms_time()
 
     if (current_time / 1000) % 1800 == 0:
-        time.sleep(50)
+        time.sleep(30)
 
         for asset in portfolio.assets:
             df_asset_30m = create_dataframe(asset, SHORT_INTERVAL, MA2)
