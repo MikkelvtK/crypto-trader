@@ -64,8 +64,9 @@ while True:
 
         for asset in portfolio.assets:
             df_asset_30m = create_dataframe(asset, SHORT_INTERVAL, MA2)
-            print(f"<--------------------RETRIEVING DATA FOR {asset} SHORT TERM STRATEGY----------------------->:\n"
+            print(f"<-------------------------RETRIEVING DATA FOR {asset} SHORT TERM STRATEGY------------------>:\n"
                   f"{df_asset_30m.iloc[[-1]]}")
+            print("<------------------------------------------------------------------------------------------>")
             action = bottom_rsi.check_for_signal(df_asset_30m)
 
             if action == "BUY":
@@ -88,8 +89,9 @@ while True:
             if counter % 8 == 0:
                 df_asset_4h = create_dataframe(asset, LONG_INTERVAL, MA2)
                 counter = 0
-                print(f"<--------------------RETRIEVING DATA FOR {asset} LONG TERM STRATEGY------------------------>:\n"
+                print(f"<-------------------------RETRIEVING DATA FOR {asset} LONG TERM STRATEGY------------------->:\n"
                       f"{df_asset_4h.iloc[[-1]]}")
+                print("<------------------------------------------------------------------------------------------>")
                 action = crossing_sma.check_for_signal(df_asset_4h)
 
                 if action == "BUY":

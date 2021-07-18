@@ -40,7 +40,7 @@ class TraderAPI:
         response = requests.get(self.endpoint + request, params=params, headers=self.header).json()
         for balance in response["balances"]:
             if balance["asset"] == "EUR":
-                return balance["free"]
+                return float(balance["free"])
 
     def post_order(self, asset, quantity, action):
         if action == "BUY":
@@ -61,4 +61,9 @@ class TraderAPI:
             "timestamp": ms_time,
             "signature": signature,
         }
-        return requests.post(self.endpoint + request, params=params, headers=self.header).json()
+
+        response = requests.post(self.endpoint + request, params=params, headers=self.header)
+        if response.status_code == requests.codes.ok:
+            print(f"<-------------------------{action} ORDER PLACED-------------------------------------------->:")
+            print("<------------------------------------------------------------------------------------------>")
+            return response.json()
