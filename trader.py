@@ -64,8 +64,6 @@ class TraderAPI:
 
         response = requests.post(self.endpoint + request, params=params, headers=self.header)
         if response.status_code == requests.codes.ok:
-            print(f"<-------------------------{action} ORDER PLACED-------------------------------------------->")
-            print("<------------------------------------------------------------------------------------------>")
             return response.json()
         else:
-            print(response)
+            print(response.text)

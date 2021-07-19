@@ -2,7 +2,7 @@ class Portfolio:
 
     def __init__(self, trader):
         self.trader = trader
-        self.assets = ["VETUSDT"]
+        self.assets = ["VETEUR"]
         self.balance = self.trader.get_balance()
         self.coins = {}
 
