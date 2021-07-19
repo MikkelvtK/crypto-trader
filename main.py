@@ -94,7 +94,7 @@ while True:
                 else:
                     order_price = portfolio.balance * 0.34
 
-                # receipt = trader.post_order(asset, order_price, action)
+                receipt = trader.post_order(asset, order_price, action)
                 # process_order(receipt, engine, "RSI buy")
                 portfolio.coins[f"{asset} short term"] = float(receipt["price"]) * order_price
                 portfolio.get_balance()
@@ -123,7 +123,7 @@ while True:
                     else:
                         order_price = portfolio.balance * 0.66
 
-                    # receipt = trader.post_order(asset, order_price, action)
+                    receipt = trader.post_order(asset, order_price, action)
                     # process_order(receipt, engine, "Golden cross")
                     portfolio.coins[f"{asset} long term"] = float(receipt["price"]) * order_price
                     portfolio.get_balance()
@@ -143,3 +143,5 @@ while True:
 
 # TODO: Give strategies a type attribute, add every strategy instance to a list and loop through it for better
 #  efficiency in the code
+
+# TODO: Find solution for currency issue
