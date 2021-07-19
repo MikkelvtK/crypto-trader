@@ -78,7 +78,7 @@ while True:
 
     current_time = current_ms_time()
 
-    if (current_time / 1000) % 1800 == 0:
+    if (current_time / 1000) % 60 == 0:
         time.sleep(30)
 
         for asset in portfolio.assets:
@@ -95,8 +95,9 @@ while True:
                     order_price = round(portfolio.balance * 0.34, 2)
 
                 receipt = trader.post_order(asset, order_price, action)
+
                 # process_order(receipt, engine, "RSI buy")
-                portfolio.coins[f"{asset} short term"] = round(float(receipt["executedQty"]), 4)
+                portfolio.coins[f"{asset} short term"] = round(float(receipt["origQty"]) * 0.99)
                 portfolio.get_balance()
 
                 format_order_message(action)
@@ -119,13 +120,13 @@ while True:
 
                 if action == "BUY":
                     if bottom_rsi.buy:
-                        order_price = portfolio.balance
+                        order_price = round(portfolio.balance, 2)
                     else:
-                        order_price = portfolio.balance * 0.66
+                        order_price = round(portfolio.balance * 0.66, 2)
 
                     receipt = trader.post_order(asset, order_price, action)
                     # process_order(receipt, engine, "Golden cross")
-                    portfolio.coins[f"{asset} long term"] = round(float(receipt["executedQty"]), 3)
+                    portfolio.coins[f"{asset} long term"] = round(float(receipt["origQty"]) * 0.99)
                     portfolio.get_balance()
 
                     format_order_message(action)
