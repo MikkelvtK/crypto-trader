@@ -24,7 +24,13 @@ class TraderAPI:
             "interval": interval,
             "limit": limit,
         }
-        return requests.get(self.endpoint + candlestick_data, params=params, headers=self.header).json()
+
+        response = requests.get(self.endpoint + candlestick_data, params=params, headers=self.header)
+        if response.status_code == requests.codes.ok:
+            return response.json()
+        else:
+            print(response.text)
+        return response.json()
 
     def get_balance(self):
         ms_time = round(time.time() * 1000)

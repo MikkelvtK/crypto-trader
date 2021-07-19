@@ -90,13 +90,13 @@ while True:
 
             if action == "BUY":
                 if crossing_sma.buy:
-                    order_price = portfolio.balance
+                    order_price = round(portfolio.balance, 2)
                 else:
-                    order_price = portfolio.balance * 0.34
+                    order_price = round(portfolio.balance * 0.34, 2)
 
                 receipt = trader.post_order(asset, order_price, action)
                 # process_order(receipt, engine, "RSI buy")
-                portfolio.coins[f"{asset} short term"] = float(receipt["price"]) * order_price
+                portfolio.coins[f"{asset} short term"] = round(float(receipt["executedQty"]), 4)
                 portfolio.get_balance()
 
                 format_order_message(action)
@@ -125,7 +125,7 @@ while True:
 
                     receipt = trader.post_order(asset, order_price, action)
                     # process_order(receipt, engine, "Golden cross")
-                    portfolio.coins[f"{asset} long term"] = float(receipt["price"]) * order_price
+                    portfolio.coins[f"{asset} long term"] = round(float(receipt["executedQty"]), 3)
                     portfolio.get_balance()
 
                     format_order_message(action)
