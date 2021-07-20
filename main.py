@@ -1,4 +1,5 @@
 import pandas as pd
+import pandas_ta as pta
 import time
 # import sqlalchemy
 from trader import TraderAPI
@@ -38,7 +39,7 @@ def create_dataframe(symbol, interval, limit):
     df = df.astype(float)
     df[f"SMA_{MA1}"] = df["Price"].rolling(window=MA1).mean()
     df[f"SMA_{MA2}"] = df["Price"].rolling(window=MA2).mean()
-    df["RSI"] = calculate_rsi(df["Price"])
+    df["RSI"] = pta.rsi(df["Price"], length=14)
     return df
 
 
@@ -97,7 +98,7 @@ while True:
                 receipt = trader.post_order(asset, order_price, action)
 
                 # process_order(receipt, engine, "RSI buy")
-                portfolio.coins[f"{asset} short term"] = round(float(receipt["origQty"]) * 0.99)
+                portfolio.coins[f"{asset} short term"] = round(float(receipt["origQty"]) * 0.992)
                 portfolio.get_balance()
 
                 format_order_message(action)
@@ -126,7 +127,7 @@ while True:
 
                     receipt = trader.post_order(asset, order_price, action)
                     # process_order(receipt, engine, "Golden cross")
-                    portfolio.coins[f"{asset} long term"] = round(float(receipt["origQty"]) * 0.99)
+                    portfolio.coins[f"{asset} long term"] = round(float(receipt["origQty"]) * 0.992)
                     portfolio.get_balance()
 
                     format_order_message(action)
