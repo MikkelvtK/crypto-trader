@@ -6,6 +6,7 @@ import os
 
 
 class TraderAPI:
+
     def __init__(self):
         self.key = os.environ.get("apiKey")
         self.secret = os.environ.get("apiSecret")
@@ -26,11 +27,12 @@ class TraderAPI:
         }
 
         response = requests.get(self.endpoint + candlestick_data, params=params, headers=self.header)
-        if response.status_code == requests.codes.ok:
+        if response.ok:
             return response.json()
         else:
             print(response.text)
-        return response.json()
+            time.sleep(5)
+            self.get_history(symbol, interval, limit)
 
     def get_balance(self):
         ms_time = round(time.time() * 1000)
@@ -69,7 +71,10 @@ class TraderAPI:
         }
 
         response = requests.post(self.endpoint + request, params=params, headers=self.header)
-        if response.status_code == requests.codes.ok:
+        if response.ok:
             return response.json()
         else:
             print(response.text)
+            time.sleep(5)
+            self.post_order(asset, quantity, action)
+

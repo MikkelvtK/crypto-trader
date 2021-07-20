@@ -79,7 +79,7 @@ while True:
 
     current_time = current_ms_time()
 
-    if (current_time / 1000) % 1800 == 0:
+    if -1 <= ((current_time / 1000) % 1800) <= 1:
         time.sleep(30)
 
         for asset in portfolio.assets:
@@ -96,6 +96,8 @@ while True:
                     order_price = round(portfolio.balance * 0.34, 2)
 
                 receipt = trader.post_order(asset, order_price, action)
+                if receipt["status"] == "FILLED":
+                    bottom_rsi.buy = True
 
                 # process_order(receipt, engine, "RSI buy")
                 portfolio.coins[f"{asset} short term"] = round(float(receipt["origQty"]) * 0.992)
@@ -105,6 +107,10 @@ while True:
 
             elif action == "SELL":
                 receipt = trader.post_order(asset, portfolio.coins[f"{asset} short term"], action)
+
+                if receipt["status"] == "FILLED":
+                    bottom_rsi.buy = False
+
                 # process_order(receipt, engine, "RSI sell")
                 portfolio.coins[f"{asset} short term"] = 0
                 portfolio.get_balance()
@@ -126,6 +132,10 @@ while True:
                         order_price = round(portfolio.balance * 0.66, 2)
 
                     receipt = trader.post_order(asset, order_price, action)
+
+                    if receipt["status"] == "FILLED":
+                        crossing_sma.buy = True
+
                     # process_order(receipt, engine, "Golden cross")
                     portfolio.coins[f"{asset} long term"] = round(float(receipt["origQty"]) * 0.992)
                     portfolio.get_balance()
@@ -134,6 +144,10 @@ while True:
 
                 elif action == "SELL":
                     receipt = trader.post_order(asset, portfolio.coins[f"{asset} long term"], action)
+
+                    if receipt["status"] == "FILLED":
+                        crossing_sma.buy = False
+
                     # process_order(receipt, engine, "Death cross")
                     portfolio.coins[f"{asset} long term"] = 0
                     portfolio.get_balance()
