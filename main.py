@@ -78,7 +78,7 @@ while True:
 
     current_time = current_ms_time()
 
-    if (current_time / 1000) % 60 == 0:
+    if (current_time / 1000) % 1800 == 0:
         time.sleep(30)
 
         for asset in portfolio.assets:
