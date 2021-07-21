@@ -69,7 +69,7 @@ def format_order_message(order_action):
 
 
 trader = TraderAPI()
-portfolio = Portfolio(trader.get_balance())
+portfolio = Portfolio(trader.get_balance("EUR"))
 crossing_sma = CrossingSMA(MA1, MA2, interval=("4h", 14400), strategy_type="LONG", balance=portfolio.balance * 0.66)
 bottom_rsi = BottomRSI(interval=("30m", 1800), strategy_type="SHORT", balance=portfolio.balance * 0.34)
 strategies = (crossing_sma, bottom_rsi)
@@ -86,35 +86,38 @@ while True:
 
             for asset in portfolio.assets:
                 df_asset = create_dataframe(asset, strategy.interval[0], MA2)
-
                 format_data_message(df_asset, asset, strategy.strategy_type)
-
                 action = strategy.check_for_signal(df_asset)
 
                 if action == "BUY":
-                    key = f"{asset} {strategy.strategy_type.lower()} term"
-                    receipt = trader.post_order(asset, round(strategy.usable_balance, 2), action)
+                    receipt = trader.post_order(asset, round(strategy.usable_balance, 2), action, 1)
+
+                    if receipt == "BREAK":
+                        break
+
                     if receipt["status"] == "FILLED":
                         strategy.buy = True
 
                         # process_order(receipt, engine, "RSI buy")
-                        quantity = round(float(receipt["origQty"]))
-                        portfolio.coins[key] = quantity
-                        portfolio.balance = trader.get_balance()
-
+                        key = f"{asset} {strategy.strategy_type.lower()} term"
+                        portfolio.coins[key] = round(trader.get_balance("VET") * 0.995, 2)
+                        portfolio.balance = trader.get_balance("EUR")
                         format_order_message(action)
 
                 elif action == "SELL":
                     key = f"{asset} {strategy.strategy_type.lower()} term"
-                    receipt = trader.post_order(asset, (portfolio.coins[key] * df_asset["Price"].iloc[-1]), action)
+                    receipt = trader.post_order(asset, portfolio.coins[key], action, 1)
+
+                    if receipt == "BREAK":
+                        break
 
                     if receipt["status"] == "FILLED":
                         strategy.buy = False
 
                         # process_order(receipt, engine, "RSI sell")
                         portfolio.coins[key] = 0
-                        portfolio.balance = trader.get_balance()
-                        strategy.usable_balance = round(receipt["origQty"] * receipt["price"], 2)
+                        portfolio.balance = trader.get_balance("EUR")
+                        strategy.usable_balance = round(float(receipt["executedQty"]) * float(receipt["price"]), 2)
                         format_order_message(action)
 
             just_posted = True

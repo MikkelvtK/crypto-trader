@@ -34,7 +34,7 @@ class TraderAPI:
             time.sleep(5)
             self.get_history(symbol, interval, limit)
 
-    def get_balance(self):
+    def get_balance(self, asset):
         ms_time = round(time.time() * 1000)
         request = "/api/v3/account"
         query_string = f"timestamp={ms_time}"
@@ -47,11 +47,14 @@ class TraderAPI:
 
         response = requests.get(self.endpoint + request, params=params, headers=self.header).json()
         for balance in response["balances"]:
-            if balance["asset"] == "EUR":
+            if balance["asset"] == asset:
                 return float(balance["free"])
 
-    def post_order(self, asset, quantity, action):
-        quantity_type = "quoteOrderQty"
+    def post_order(self, asset, quantity, action, counter):
+        if action == "BUY":
+            quantity_type = "quoteOrderQty"
+        else:
+            quantity_type = "quantity"
         side = action
         type_ = "MARKET"
         request = "/api/v3/order"
@@ -72,5 +75,8 @@ class TraderAPI:
             return response.json()
         else:
             print(response.text)
+            if counter == 5:
+                return "BREAK"
             time.sleep(5)
-            self.post_order(asset, quantity, action)
+            counter += 1
+            self.post_order(asset, quantity, action, counter)
