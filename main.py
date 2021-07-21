@@ -69,95 +69,56 @@ def format_order_message(order_action):
 
 
 trader = TraderAPI()
-portfolio = Portfolio(trader)
-crossing_sma = CrossingSMA(MA1, MA2)
-bottom_rsi = BottomRSI(MA1, MA2)
+portfolio = Portfolio(trader.get_balance())
+crossing_sma = CrossingSMA(MA1, MA2, interval=("4h", 14400), strategy_type="LONG", balance=portfolio.balance * 0.66)
+bottom_rsi = BottomRSI(interval=("30m", 1800), strategy_type="SHORT", balance=portfolio.balance * 0.34)
+strategies = (crossing_sma, bottom_rsi)
 # engine = sqlalchemy.create_engine("sqlite:///data/trade_log.db")
 
-counter = 0
+just_posted = False
 while True:
-
     current_time = current_ms_time()
 
-    if -1 <= ((current_time / 1000) % 1800) <= 1:
-        time.sleep(30)
+    for strategy in strategies:
 
-        for asset in portfolio.assets:
-            df_asset_30m = create_dataframe(asset, SHORT_INTERVAL, MA2)
+        if -1 <= ((current_time / 1000) % strategy.interval[1]) <= 1:
+            time.sleep(15)
 
-            format_data_message(df_asset_30m, asset, "SHORT")
+            for asset in portfolio.assets:
+                df_asset = create_dataframe(asset, strategy.interval[0], MA2)
 
-            action = bottom_rsi.check_for_signal(df_asset_30m)
+                format_data_message(df_asset, asset, strategy.strategy_type)
 
-            if action == "BUY":
-                if crossing_sma.buy:
-                    order_price = round(portfolio.balance, 2)
-                else:
-                    order_price = round(portfolio.balance * 0.34, 2)
-
-                receipt = trader.post_order(asset, order_price, action)
-                if receipt["status"] == "FILLED":
-                    bottom_rsi.buy = True
-
-                # process_order(receipt, engine, "RSI buy")
-                portfolio.coins[f"{asset} short term"] = round(float(receipt["origQty"]) * 0.992)
-                portfolio.get_balance()
-
-                format_order_message(action)
-
-            elif action == "SELL":
-                receipt = trader.post_order(asset, portfolio.coins[f"{asset} short term"], action)
-
-                if receipt["status"] == "FILLED":
-                    bottom_rsi.buy = False
-
-                # process_order(receipt, engine, "RSI sell")
-                portfolio.coins[f"{asset} short term"] = 0
-                portfolio.get_balance()
-
-                format_order_message(action)
-
-            if counter % 8 == 0:
-                df_asset_4h = create_dataframe(asset, LONG_INTERVAL, MA2)
-                counter = 0
-
-                format_data_message(df_asset_4h, asset, "LONG")
-
-                action = crossing_sma.check_for_signal(df_asset_4h)
+                action = strategy.check_for_signal(df_asset)
 
                 if action == "BUY":
-                    if bottom_rsi.buy:
-                        order_price = round(portfolio.balance, 2)
-                    else:
-                        order_price = round(portfolio.balance * 0.66, 2)
-
-                    receipt = trader.post_order(asset, order_price, action)
-
+                    key = f"{asset} {strategy.strategy_type.lower()} term"
+                    receipt = trader.post_order(asset, round(strategy.usable_balance, 2), action)
                     if receipt["status"] == "FILLED":
-                        crossing_sma.buy = True
+                        strategy.buy = True
 
-                    # process_order(receipt, engine, "Golden cross")
-                    portfolio.coins[f"{asset} long term"] = round(float(receipt["origQty"]) * 0.992)
-                    portfolio.get_balance()
+                        # process_order(receipt, engine, "RSI buy")
+                        quantity = round(float(receipt["origQty"]) * 0.99)
+                        portfolio.coins[key] = quantity
+                        portfolio.balance = trader.get_balance()
 
-                    format_order_message(action)
+                        format_order_message(action)
 
                 elif action == "SELL":
-                    receipt = trader.post_order(asset, portfolio.coins[f"{asset} long term"], action)
+                    key = f"{asset} {strategy.strategy_type.lower()} term"
+                    receipt = trader.post_order(asset, portfolio.coins[key], action)
 
                     if receipt["status"] == "FILLED":
-                        crossing_sma.buy = False
+                        strategy.buy = False
 
-                    # process_order(receipt, engine, "Death cross")
-                    portfolio.coins[f"{asset} long term"] = 0
-                    portfolio.get_balance()
+                        # process_order(receipt, engine, "RSI sell")
+                        portfolio.coins[key] = 0
+                        portfolio.balance = trader.get_balance()
+                        strategy.usable_balance = round(receipt["origQty"] * receipt["price"], 2)
+                        format_order_message(action)
 
-                    format_order_message(action)
+            just_posted = True
 
+    if just_posted:
         time.sleep(60)
-        counter += 1
-
-# TODO: Give strategies a type attribute, add every strategy instance to a list and loop through it for better
-#  efficiency in the code
-
-# TODO: Find solution for currency issue
+        just_posted = False

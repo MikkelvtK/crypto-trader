@@ -1,11 +1,18 @@
-class CrossingSMA:
+class Strategy:
 
-    def __init__(self, ma1, ma2):
+    def __init__(self, interval, strategy_type, balance):
         self.buy = False
+        self.interval = interval
+        self.strategy_type = strategy_type
+        self.usable_balance = balance
+
+
+class CrossingSMA(Strategy):
+
+    def __init__(self, ma1, ma2, interval, strategy_type, balance):
+        super().__init__(interval, strategy_type, balance)
         self.ma1 = ma1
         self.ma2 = ma2
-        self.interval = "4h"
-        self.type = "LONG"
 
     def check_for_signal(self, df):
         if df[f"SMA_{self.ma1}"].iloc[-1] > df[f"SMA_{self.ma2}"].iloc[-1] and self.buy is False:
@@ -14,15 +21,11 @@ class CrossingSMA:
             return "SELL"
 
 
-class BottomRSI:
+class BottomRSI(Strategy):
 
-    def __init__(self, ma1, ma2):
-        self.buy = False
-        self.ma1 = ma1
-        self.ma2 = ma2
+    def __init__(self, interval, strategy_type, balance):
+        super().__init__(interval, strategy_type, balance)
         self.counter = 0
-        self.interval = "30m"
-        self.type = "SHORT"
 
     def check_for_signal(self, df):
         if self.buy is True:

@@ -77,4 +77,3 @@ class TraderAPI:
             print(response.text)
             time.sleep(5)
             self.post_order(asset, quantity, action)
-
