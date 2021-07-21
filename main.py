@@ -98,7 +98,7 @@ while True:
                         strategy.buy = True
 
                         # process_order(receipt, engine, "RSI buy")
-                        quantity = round(float(receipt["origQty"]) * 0.99)
+                        quantity = round(float(receipt["origQty"]))
                         portfolio.coins[key] = quantity
                         portfolio.balance = trader.get_balance()
 
@@ -106,7 +106,7 @@ while True:
 
                 elif action == "SELL":
                     key = f"{asset} {strategy.strategy_type.lower()} term"
-                    receipt = trader.post_order(asset, portfolio.coins[key], action)
+                    receipt = trader.post_order(asset, (portfolio.coins[key] * df_asset["Price"].iloc[-1]), action)
 
                     if receipt["status"] == "FILLED":
                         strategy.buy = False

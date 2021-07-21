@@ -51,10 +51,7 @@ class TraderAPI:
                 return float(balance["free"])
 
     def post_order(self, asset, quantity, action):
-        if action == "BUY":
-            quantity_type = "quoteOrderQty"
-        else:
-            quantity_type = "quantity"
+        quantity_type = "quoteOrderQty"
         side = action
         type_ = "MARKET"
         request = "/api/v3/order"
