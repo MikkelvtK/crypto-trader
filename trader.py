@@ -17,24 +17,27 @@ class TraderAPI:
         symbol_price_ticker = "/api/v3/ticker/price"
         return requests.get(self.endpoint + symbol_price_ticker, params={"symbol": asset}).json()
 
-    def get_history(self, symbol, interval, limit=1000):
+    def get_history(self, n, **kwargs):
+        if n == 5:
+            print("I failed to connect with the API. Breaking the cycle")
+            return
+
         candlestick_data = "/api/v3/klines"
 
         params = {
-            "symbol": symbol,
-            "interval": interval,
-            "limit": limit,
+            "symbol": kwargs["symbol"],
+            "interval": kwargs["interval"],
+            "limit": kwargs["limit"],
         }
 
         response = requests.get(self.endpoint + candlestick_data, params=params, headers=self.header)
-        if response.ok:
-            return response.json()
-        else:
-            print(response.text)
-            time.sleep(5)
-            self.get_history(symbol, interval, limit)
+        return self.check_response(self.get_history, n, response, kwargs)
 
-    def get_balance(self, asset):
+    def get_balance(self, n, **kwargs):
+        if n == 5:
+            print("I failed to connect with the API. Breaking the cycle")
+            return 0
+
         ms_time = round(time.time() * 1000)
         request = "/api/v3/account"
         query_string = f"timestamp={ms_time}"
@@ -45,15 +48,16 @@ class TraderAPI:
             "signature": signature,
         }
 
-        response = requests.get(self.endpoint + request, params=params, headers=self.header).json()
-        for balance in response["balances"]:
-            if balance["asset"] == asset:
+        response = requests.get(self.endpoint + request, params=params, headers=self.header)
+        response_json = self.check_response(self.get_balance, n, response, kwargs)
+        for balance in response_json["balances"]:
+            if balance["asset"] == kwargs["asset"]:
                 return float(balance["free"])
 
     def post_order(self, n, **kwargs):
         if n == 5:
             print("I failed to connect with the API. Breaking the cycle")
-            return "BREAK"
+            return "SKIP"
 
         if kwargs["action"] == "BUY":
             quantity_type = "quoteOrderQty"
@@ -81,8 +85,8 @@ class TraderAPI:
         response = requests.post(self.endpoint + request, params=params, headers=self.header)
         return self.check_response(self.post_order, n, response, kwargs)
 
-    @classmethod
-    def check_response(cls, func, n, response, kwargs):
+    @staticmethod
+    def check_response(func, n, response, kwargs):
         if response.ok:
             return response.json()
         else:

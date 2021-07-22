@@ -1,7 +1,6 @@
 import pandas as pd
 import pandas_ta as pta
 import time
-# import sqlalchemy
 from trader import TraderAPI
 from wallet import Portfolio
 from strategies import *
@@ -31,7 +30,7 @@ def current_ms_time():
 
 
 def create_dataframe(symbol, interval, limit):
-    df = pd.DataFrame(trader.get_history(symbol, interval, limit=limit))
+    df = pd.DataFrame(trader.get_history(0, symbol=symbol, interval=interval, limit=limit))
     df = df.drop(columns=df.iloc[:, 2:].columns)
     df.columns = ["Open Time", "Price"]
     df = df.set_index("Open Time")
@@ -62,14 +61,14 @@ def format_data_message(df, asset_symbol, strategy_type):
     print(add_border(""))
 
 
-def format_order_message(order_action):
-    print(add_border(f"{order_action} ORDER PLACED"))
+def format_order_message(order_action, active_asset):
+    print(add_border(f"{order_action} ORDER PLACED FOR {active_asset}"))
     print(add_border(f"NEW BALANCE: {portfolio.balance}"))
     print(add_border(""))
 
 
 trader = TraderAPI()
-portfolio = Portfolio(trader.get_balance("EUR"))
+portfolio = Portfolio(trader.get_balance(0, asset="EUR"))
 crossing_sma = CrossingSMA(MA1, MA2, interval=H4, strategy_type="LONG", balance=0.66)
 bottom_rsi = BottomRSI(interval=M30, strategy_type="SHORT", balance=0.34)
 strategies = (crossing_sma, bottom_rsi)
@@ -86,36 +85,36 @@ while True:
             for asset in portfolio.assets:
                 df_asset = create_dataframe(asset, strategy.interval[0], MA2)
                 format_data_message(df_asset, asset, strategy.strategy_type)
-                action = strategy.check_for_signal(df_asset)
+                action = strategy.check_for_signal(df_asset, asset)
 
                 if action == "BUY":
                     trade_amount = portfolio.calc_available_balance(strategy.ratio)
-                    receipt = trader.post_order(1, asset=asset, quantity=round(trade_amount, 2), action=action)
+                    receipt = trader.post_order(0, asset=asset, quantity=round(trade_amount, 2), action=action)
 
-                    if receipt == "BREAK":
+                    if receipt == "SKIP":
                         break
 
                     elif receipt["status"] == "FILLED":
-                        strategy.buy = True
+                        strategy.active_asset = asset
                         portfolio.active_trades += strategy.ratio
                         key = f"{asset} {strategy.strategy_type.lower()} term"
-                        portfolio.coins[key] = round(trader.get_balance("VET") * 0.995, 2)
-                        portfolio.balance = trader.get_balance("EUR")
-                        format_order_message(action)
+                        portfolio.coins[key] = round(trader.get_balance(0, asset=asset[:-3]) * 0.995, 2)
+                        portfolio.balance = trader.get_balance(0, asset="EUR")
+                        format_order_message(action, asset)
 
                 elif action == "SELL":
                     key = f"{asset} {strategy.strategy_type.lower()} term"
-                    receipt = trader.post_order(1, asset=asset, quantity=portfolio.coins[key], action=action)
+                    receipt = trader.post_order(0, asset=asset, quantity=portfolio.coins[key], action=action)
 
-                    if receipt == "BREAK":
+                    if receipt == "SKIP":
                         break
 
                     elif receipt["status"] == "FILLED":
-                        strategy.buy = False
+                        strategy.active_asset = None
                         portfolio.active_trades -= strategy.ratio
                         portfolio.coins[key] = 0
-                        portfolio.balance = trader.get_balance("EUR")
-                        format_order_message(action)
+                        portfolio.balance = trader.get_balance(0, asset="EUR")
+                        format_order_message(action, asset)
 
             just_posted = True
 
