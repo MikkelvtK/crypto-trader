@@ -5,8 +5,8 @@ from trader import TraderAPI
 from wallet import Portfolio
 from strategies import *
 
-MA1 = 50
-MA2 = 200
+MA1 = 40
+MA2 = 170
 M30 = ("30m", 1800)
 M15 = ("15m", 900)
 H4 = ("4h", 14400)
