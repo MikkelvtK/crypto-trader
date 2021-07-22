@@ -31,8 +31,7 @@ class BottomRSI(Strategy):
         if self.buy is True:
             self.counter += 1
 
-        if df["RSI"].iloc[-1] < 30 and self.buy is False:
+        if df["RSI"].iloc[-1] < 80 and self.buy is False:
             return "BUY"
-        elif ((df["RSI"].iloc[-1] > 40 or self.counter == 5) and
-              self.buy is True):
+        elif (df["RSI"].iloc[-1] > 40 or self.counter == 5) and self.buy is True:
             return "SELL"

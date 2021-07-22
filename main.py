@@ -90,10 +90,11 @@ while True:
 
                 if action == "BUY":
                     trade_amount = portfolio.calc_available_balance(strategy.ratio)
-                    receipt = trader.post_order(asset, round(trade_amount, 2), action, 1)
+                    receipt = trader.post_order(1, asset=asset, quantity=round(trade_amount, 2), action=action)
 
                     if receipt == "BREAK":
                         break
+
                     elif receipt["status"] == "FILLED":
                         strategy.buy = True
                         portfolio.active_trades += strategy.ratio
@@ -104,10 +105,11 @@ while True:
 
                 elif action == "SELL":
                     key = f"{asset} {strategy.strategy_type.lower()} term"
-                    receipt = trader.post_order(asset, portfolio.coins[key], action, 1)
+                    receipt = trader.post_order(1, asset=asset, quantity=portfolio.coins[key], action=action)
 
                     if receipt == "BREAK":
                         break
+
                     elif receipt["status"] == "FILLED":
                         strategy.buy = False
                         portfolio.active_trades -= strategy.ratio

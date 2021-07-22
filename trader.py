@@ -50,33 +50,42 @@ class TraderAPI:
             if balance["asset"] == asset:
                 return float(balance["free"])
 
-    def post_order(self, asset, quantity, action, counter):
-        if action == "BUY":
+    def post_order(self, n, **kwargs):
+        if n == 5:
+            print("I failed to connect with the API. Breaking the cycle")
+            return "BREAK"
+
+        if kwargs["action"] == "BUY":
             quantity_type = "quoteOrderQty"
         else:
             quantity_type = "quantity"
-        side = action
+
+        side = kwargs["action"]
         type_ = "MARKET"
         request = "/api/v3/order"
         ms_time = round(time.time() * 1000)
-        query_string = f"symbol={asset}&side={side}&type={type_}&{quantity_type}={quantity}&timestamp={ms_time}"
+
+        query_string = f"symbol={kwargs['asset']}&side={side}&type={type_}&" \
+                       f"{quantity_type}={kwargs['quantity']}&timestamp={ms_time}"
         signature = hmac.new(self.secret.encode('utf-8'), query_string.encode('utf-8'), hashlib.sha256).hexdigest()
+
         params = {
-            "symbol": asset,
+            "symbol": kwargs["asset"],
             "side": side,
             "type": type_,
-            quantity_type: quantity,
+            quantity_type: kwargs["quantity"],
             "timestamp": ms_time,
             "signature": signature,
         }
 
         response = requests.post(self.endpoint + request, params=params, headers=self.header)
+        return self.check_response(self.post_order, n, response, kwargs)
+
+    @classmethod
+    def check_response(cls, func, n, response, kwargs):
         if response.ok:
             return response.json()
         else:
-            print(response.text)
-            if counter == 5:
-                return "BREAK"
+            print("There are some issues with the API connection. Please HODL.")
             time.sleep(5)
-            counter += 1
-            self.post_order(asset, quantity, action, counter)
+            return func(n+1, **kwargs)
