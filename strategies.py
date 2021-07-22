@@ -1,10 +1,10 @@
 class Strategy:
 
-    def __init__(self, interval, strategy_type, balance):
+    def __init__(self, interval, strategy_type, ratio):
         self.buy = False
         self.interval = interval
         self.strategy_type = strategy_type
-        self.usable_balance = balance
+        self.ratio = ratio
 
 
 class CrossingSMA(Strategy):
