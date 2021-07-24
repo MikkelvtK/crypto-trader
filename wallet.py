@@ -1,7 +1,7 @@
 class Portfolio:
 
     def __init__(self, balance):
-        self.assets = ["VETEUR", "ADAEUR"]
+        self.assets = ["VETEUR"]
         self.balance = balance
         self.coins = {}
         self.active_trades = 0
