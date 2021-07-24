@@ -10,6 +10,7 @@ MA2 = 170
 M30 = ("30m", 1800)
 M15 = ("15m", 900)
 H4 = ("4h", 14400)
+H1 = ("1h", 3600)
 LOG_COLUMNS = ["Timestamp", "Asset", "Action", "Price", "Volume", "Strategy"]
 
 
@@ -71,7 +72,7 @@ def format_order_message(order_action, active_asset):
 trader = TraderAPI()
 portfolio = Portfolio(trader.get_balance(0, asset="EUR"))
 crossing_sma = CrossingSMA(MA1, MA2, interval=H4, strategy_type="LONG", balance=0.66)
-bottom_rsi = BottomRSI(interval=M15, strategy_type="SHORT", balance=0.34)
+bottom_rsi = BottomRSI(interval=H1, strategy_type="SHORT", balance=0.34)
 strategies = (crossing_sma, bottom_rsi)
 
 just_posted = False
