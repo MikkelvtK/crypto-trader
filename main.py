@@ -105,7 +105,7 @@ while True:
                         strategy.active_asset.append(asset)
                         portfolio.active_trades += (strategy.ratio / len(portfolio.assets))
                         key = f"{asset} {strategy.strategy_type.lower()}"
-                        portfolio.coins[key] = float(receipt["executedQty"] * 0.997)
+                        portfolio.coins[key] = float(receipt["executedQty"]) * 0.997
                         portfolio.balance = trader.get_balance(0, asset="EUR")
                         format_order_message(action, asset)
 
