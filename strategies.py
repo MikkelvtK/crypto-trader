@@ -35,7 +35,7 @@ class BottomRSI(Strategy):
         if df["RSI"].iloc[-1] < 30 and asset not in self.active_asset:
             return "BUY"
 
-        elif (df["RSI"].iloc[-1] > 40 or self.counter == 5) and asset in self.active_asset:
+        elif (df["RSI"].iloc[-1] >= 40 or self.counter == 5) and asset in self.active_asset:
             self.counter = 0
             return "SELL"
 

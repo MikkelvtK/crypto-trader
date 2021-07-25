@@ -13,8 +13,6 @@ M15 = ("15m", 900)
 H4 = ("4h", 14400)
 H1 = ("1h", 3600)
 LOG_COLUMNS = ["Timestamp", "Asset", "Action", "Price", "Volume", "Strategy"]
-MINQTY = 0.001
-STEPSIZE = 0.001
 
 
 def calculate_rsi(df_column, window=14):
@@ -64,7 +62,7 @@ def add_border(message):
 
 
 def format_data_message(df, asset_symbol, strategy_type):
-    print(add_border(f"RETRIEVING DATA FOR {asset_symbol} {strategy_type} TERM STRATEGY"))
+    print(add_border(f"RETRIEVING DATA FOR {asset_symbol} {strategy_type} STRATEGY"))
     print(df.iloc[[-1]])
     print(add_border(""))
 
@@ -107,7 +105,7 @@ while True:
                         strategy.active_asset.append(asset)
                         portfolio.active_trades += (strategy.ratio / len(portfolio.assets))
                         key = f"{asset} {strategy.strategy_type.lower()}"
-                        portfolio.coins[key] = trader.get_balance(0, asset=asset[:-3])
+                        portfolio.coins[key] = float(receipt["executedQty"])
                         portfolio.balance = trader.get_balance(0, asset="EUR")
                         format_order_message(action, asset)
 

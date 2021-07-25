@@ -104,8 +104,3 @@ class TraderAPI:
             print("There are some issues with the API connection. Please HODL.")
             time.sleep(5)
             return func(n+1, **kwargs)
-
-
-if __name__ == "__main__":
-    trader = TraderAPI()
-    print(trader.get_exchange_info("VETEUR"))
