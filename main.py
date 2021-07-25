@@ -7,6 +7,7 @@ from strategies import *
 
 MA1 = 40
 MA2 = 170
+STD = 20
 M30 = ("30m", 1800)
 M15 = ("15m", 900)
 H4 = ("4h", 14400)
@@ -40,6 +41,9 @@ def create_dataframe(symbol, interval, limit):
     df = df.astype(float)
     df[f"SMA_{MA1}"] = df["Price"].rolling(window=MA1).mean()
     df[f"SMA_{MA2}"] = df["Price"].rolling(window=MA2).mean()
+    df["Std"] = df["Price"].rolling(window=STD).std()
+    df["Upper"] = df[f"SMA_{MA1}"] + 1.5 * df["Std"]
+    df["Lower"] = df[f"SMA_{MA1}"] - 2.5 * df["Std"]
     df["RSI"] = pta.rsi(df["Price"], length=14)
     return df
 
@@ -71,9 +75,10 @@ def format_order_message(order_action, active_asset):
 
 trader = TraderAPI()
 portfolio = Portfolio(trader.get_balance(0, asset="EUR"))
-crossing_sma = CrossingSMA(MA1, MA2, interval=H4, strategy_type="LONG", balance=0.66)
-bottom_rsi = BottomRSI(interval=H1, strategy_type="SHORT", balance=0.34)
-strategies = (crossing_sma, bottom_rsi)
+crossing_sma = CrossingSMA(MA1, MA2, interval=H4, strategy_type="LONG", balance=0.50)
+bottom_rsi = BottomRSI(interval=H1, strategy_type="SHORT", balance=0.25)
+bollinger = BollingerBands(interval=M15, strategy_type="SHORT", balance=0.25)
+strategies = (crossing_sma, bottom_rsi, bollinger)
 
 just_posted = False
 while True:
@@ -90,15 +95,15 @@ while True:
                 action = strategy.check_for_signal(df_asset, asset)
 
                 if action == "BUY":
-                    trade_amount = portfolio.calc_available_balance(strategy.ratio)
+                    trade_amount = portfolio.calc_available_balance(strategy.ratio / len(portfolio.assets))
                     receipt = trader.post_order(0, asset=asset, quantity=round(trade_amount, 2), action=action)
 
                     if receipt == "SKIP":
                         break
 
                     elif receipt["status"] == "FILLED":
-                        strategy.active_asset = asset
-                        portfolio.active_trades += strategy.ratio
+                        strategy.active_asset.append(asset)
+                        portfolio.active_trades += (strategy.ratio / len(portfolio.assets))
                         key = f"{asset} {strategy.strategy_type.lower()} term"
                         portfolio.coins[key] = round(trader.get_balance(0, asset=asset[:-3]) * 0.995, 2)
                         portfolio.balance = trader.get_balance(0, asset="EUR")
@@ -112,8 +117,8 @@ while True:
                         break
 
                     elif receipt["status"] == "FILLED":
-                        strategy.active_asset = None
-                        portfolio.active_trades -= strategy.ratio
+                        strategy.active_asset.remove(asset)
+                        portfolio.active_trades -= (strategy.ratio / len(portfolio.assets))
                         portfolio.coins[key] = 0
                         portfolio.balance = trader.get_balance(0, asset="EUR")
                         format_order_message(action, asset)
