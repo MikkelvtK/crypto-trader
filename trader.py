@@ -3,6 +3,7 @@ import hashlib
 import hmac
 import time
 import os
+import json
 
 
 class TraderAPI:
@@ -85,6 +86,16 @@ class TraderAPI:
         response = requests.post(self.endpoint + request, params=params, headers=self.header)
         return self.check_response(self.post_order, n, response, kwargs)
 
+    def get_exchange_info(self, asset):
+        request = "/api/v3/exchangeInfo"
+        response = requests.get(self.endpoint + request, params={"symbol": asset}).json()
+
+        for symbol in response["symbols"]:
+            if symbol["symbol"] == asset:
+                for binance_filter in symbol["filters"]:
+                    if binance_filter['filterType'] == 'LOT_SIZE':
+                        return binance_filter['stepSize'].find('1') - 2
+
     @staticmethod
     def check_response(func, n, response, kwargs):
         if response.ok:
@@ -93,3 +104,8 @@ class TraderAPI:
             print("There are some issues with the API connection. Please HODL.")
             time.sleep(5)
             return func(n+1, **kwargs)
+
+
+if __name__ == "__main__":
+    trader = TraderAPI()
+    print(trader.get_exchange_info("VETEUR"))

@@ -13,6 +13,8 @@ M15 = ("15m", 900)
 H4 = ("4h", 14400)
 H1 = ("1h", 3600)
 LOG_COLUMNS = ["Timestamp", "Asset", "Action", "Price", "Volume", "Strategy"]
+MINQTY = 0.001
+STEPSIZE = 0.001
 
 
 def calculate_rsi(df_column, window=14):
@@ -76,8 +78,8 @@ def format_order_message(order_action, active_asset):
 trader = TraderAPI()
 portfolio = Portfolio(trader.get_balance(0, asset="EUR"))
 crossing_sma = CrossingSMA(MA1, MA2, interval=H4, strategy_type="LONG", balance=0.50)
-bottom_rsi = BottomRSI(interval=H1, strategy_type="SHORT", balance=0.25)
-bollinger = BollingerBands(interval=M15, strategy_type="SHORT", balance=0.25)
+bottom_rsi = BottomRSI(interval=H1, strategy_type="SHORT RSI", balance=0.25)
+bollinger = BollingerBands(interval=M15, strategy_type="SHORT BOL", balance=0.25)
 strategies = (crossing_sma, bottom_rsi, bollinger)
 
 just_posted = False
@@ -104,14 +106,16 @@ while True:
                     elif receipt["status"] == "FILLED":
                         strategy.active_asset.append(asset)
                         portfolio.active_trades += (strategy.ratio / len(portfolio.assets))
-                        key = f"{asset} {strategy.strategy_type.lower()} term"
-                        portfolio.coins[key] = round(trader.get_balance(0, asset=asset[:-3]) * 0.995, 2)
+                        key = f"{asset} {strategy.strategy_type.lower()}"
+                        portfolio.coins[key] = trader.get_balance(0, asset=asset[:-3])
                         portfolio.balance = trader.get_balance(0, asset="EUR")
                         format_order_message(action, asset)
 
                 elif action == "SELL":
-                    key = f"{asset} {strategy.strategy_type.lower()} term"
-                    receipt = trader.post_order(0, asset=asset, quantity=portfolio.coins[key], action=action)
+                    key = f"{asset} {strategy.strategy_type.lower()}"
+                    tick = trader.get_exchange_info(asset)
+                    quantity = portfolio.calc_order_quantity(tick, key)
+                    receipt = trader.post_order(0, asset=asset, quantity=quantity, action=action)
 
                     if receipt == "SKIP":
                         break
