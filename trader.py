@@ -67,7 +67,7 @@ class TraderAPI:
 
         side = kwargs["action"]
         type_ = "MARKET"
-        request = "/api/v3/order"
+        request = "/api/v3/order/test"
         ms_time = round(time.time() * 1000)
 
         query_string = f"symbol={kwargs['asset']}&side={side}&type={type_}&" \
@@ -84,6 +84,7 @@ class TraderAPI:
         }
 
         response = requests.post(self.endpoint + request, params=params, headers=self.header)
+        print(response.text)
         return self.check_response(self.post_order, n, response, kwargs)
 
     def get_exchange_info(self, asset):

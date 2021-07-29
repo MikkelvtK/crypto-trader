@@ -1,6 +1,8 @@
 import pandas as pd
 import pandas_ta as pta
 import time
+import sqlalchemy
+import math
 from trader import TraderAPI
 from wallet import Portfolio
 from strategies import *
@@ -48,12 +50,6 @@ def create_dataframe(symbol, interval, limit):
     return df
 
 
-def process_order(trade, db_engine, strategy):
-    entry = [trade["transactTime"], trade["symbol"], trade["side"], trade["price"], trade["executedQty"], strategy]
-    log = pd.DataFrame([entry], columns=LOG_COLUMNS)
-    log.to_sql("TradeLog", db_engine, if_exists="append", index=False)
-
-
 def add_border(message):
     formatted_message = "<-------------------------" + message
     while len(formatted_message) < 92:
@@ -73,18 +69,27 @@ def format_order_message(order_action, active_asset):
     print(add_border(""))
 
 
+def save_trade_order(asset_symbol, coins, strategy_name, ratio, db_engine):
+    row = {"asset": [asset_symbol], "coins": [coins], "ratio": [ratio], "strategy": [strategy_name]}
+    df = pd.DataFrame(row)
+    df.to_sql("active_trades", db_engine, if_exists="append", index=False)
+    return df
+
+
+def calc_order_quantity(tick, coins):
+    return math.floor(coins * 10 ** tick) / float(10 ** tick)
+
+
+engine = sqlalchemy.create_engine("sqlite:///data/trades.db")
+active_trades = pd.read_sql("active_trades", engine)
+active_trades = active_trades.set_index("asset")
+
 trader = TraderAPI()
 portfolio = Portfolio(trader.get_balance(0, asset="EUR"))
-crossing_sma = CrossingSMA(MA1, MA2, interval=H4, strategy_type="LONG", balance=0.50)
-bottom_rsi = BottomRSI(interval=H1, strategy_type="SHORT RSI", balance=0.25)
-bollinger = BollingerBands(interval=M15, strategy_type="SHORT BOL", balance=0.25)
+crossing_sma = CrossingSMA(MA1, MA2, interval=H4, name="GOLDEN CROSS", balance=0.50, df=active_trades)
+bottom_rsi = BottomRSI(interval=H1, name="RSI DIPS", balance=0.25, df=active_trades)
+bollinger = BollingerBands(interval=M15, name="BOL BANDS", balance=0.25, df=active_trades)
 strategies = (crossing_sma, bottom_rsi, bollinger)
-
-strategies[0].active_asset.append("VETEUR")
-strategies[0].active_asset.append("LINKEUR")
-portfolio.coins["VETEUR long"] = 1230.0
-portfolio.coins["LINKEUR long"] = 5.2
-portfolio.active_trades += 0.50
 
 just_posted = False
 while True:
@@ -97,7 +102,7 @@ while True:
 
             for asset in portfolio.assets:
                 df_asset = create_dataframe(asset, strategy.interval[0], MA2)
-                format_data_message(df_asset, asset, strategy.strategy_type)
+                format_data_message(df_asset, asset, strategy.name)
                 action = strategy.check_for_signal(df_asset, asset)
 
                 if action == "BUY":
@@ -108,26 +113,30 @@ while True:
                         break
 
                     elif receipt["status"] == "FILLED":
-                        strategy.active_asset.append(asset)
-                        portfolio.active_trades += (strategy.ratio / len(portfolio.assets))
-                        key = f"{asset} {strategy.strategy_type.lower()}"
-                        portfolio.coins[key] = float(receipt["executedQty"]) * 0.997
+                        new_coins = float(receipt["executedQty"]) * 0.997
+                        ratio_balance = (strategy.ratio / len(portfolio.assets))
+
+                        new_trade = save_trade_order(asset_symbol=asset, coins=new_coins, strategy_name=strategy.name,
+                                                     ratio=ratio_balance, db_engine=engine)
+                        new_trade = new_trade.set_index("asset")
+                        strategy.active_assets.append(new_trade)
+                        portfolio.active_trades += ratio_balance
                         portfolio.balance = trader.get_balance(0, asset="EUR")
                         format_order_message(action, asset)
 
                 elif action == "SELL":
-                    key = f"{asset} {strategy.strategy_type.lower()}"
-                    tick = trader.get_exchange_info(asset)
-                    quantity = portfolio.calc_order_quantity(tick, key)
+                    asset_tick = trader.get_exchange_info(asset)
+                    coins_df = strategy.active_assets["coins"].loc[strategy.active_assets["coins"].index == asset]
+                    coins_for_sale = coins_df.iloc[0]
+                    quantity = calc_order_quantity(asset_tick, coins_for_sale)
                     receipt = trader.post_order(0, asset=asset, quantity=quantity, action=action)
 
                     if receipt == "SKIP":
                         break
 
                     elif receipt["status"] == "FILLED":
-                        strategy.active_asset.remove(asset)
+                        strategy.active_assets = strategy.active_assets.loc[strategy.active_assets.index != asset]
                         portfolio.active_trades -= (strategy.ratio / len(portfolio.assets))
-                        portfolio.coins[key] = 0
                         portfolio.balance = trader.get_balance(0, asset="EUR")
                         format_order_message(action, asset)
 
