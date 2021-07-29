@@ -80,6 +80,12 @@ bottom_rsi = BottomRSI(interval=H1, strategy_type="SHORT RSI", balance=0.25)
 bollinger = BollingerBands(interval=M15, strategy_type="SHORT BOL", balance=0.25)
 strategies = (crossing_sma, bottom_rsi, bollinger)
 
+strategies[0].active_asset.append("VETEUR")
+strategies[0].active_asset.append("LINKEUR")
+portfolio.coins["VETEUR long"] = 1230.0
+portfolio.coins["LINKEUR long"] = 5.2
+portfolio.active_trades += 0.50
+
 just_posted = False
 while True:
     current_time = current_ms_time()
