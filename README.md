@@ -8,11 +8,11 @@ The bot uses a combination of strategies to place trade orders on assets using t
 
 The strategies used are:
 * Crossing moving averages (MA). MA1 is calculated over 40 intervals and MA2 is calculated over 170 intervals. 
-  The interval is set to 4 hour.
+  The interval is 4 hours.
 * RSI dips. When the RSI dips below 30 the bot will place a buy order and hold it until the RSI is back to 40 
   or when 5 intervals have passed. Whichever comes first. The interval used is 1 hour.
-* Bollinger Bands. When the price drops below the lower Bollinger band and the RSI is below 30 the bot will place a buy order.
-  The asset is sold when the price reaches the upper Bollinger band or when the trailing stop loss is activated. 
+* Bollinger Bands. When the price drops below the lower Bollinger band, and the RSI is below 30 the bot will place a buy order.
+  The asset sells when the price reaches the upper Bollinger band or when the trailing stop loss triggers. 
 
 ## Getting Started
 
@@ -32,14 +32,9 @@ The project will mostly run out of the box. Just a few things need to be done.
 strategies = (crossing_sma, bottom_rsi, bollinger)
 ```
 
-## Version History
-
-* 0.1
-    * Initial Release
-  
 ### Under Development:
 
 * Adding a notification system when trade orders have been placed.
 * A weekly summary displaying how the bot has performed.
-* A database logging trades
 * Any bug fixes that may arise
+* Refactoring code for optimization and documentation
