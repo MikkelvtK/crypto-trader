@@ -3,7 +3,6 @@ import hashlib
 import hmac
 import time
 import os
-import json
 
 
 class TraderAPI:
@@ -84,7 +83,6 @@ class TraderAPI:
         }
 
         response = requests.post(self.endpoint + request, params=params, headers=self.header)
-        print(response.text)
         return self.check_response(self.post_order, n, response, kwargs)
 
     def get_exchange_info(self, asset):

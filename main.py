@@ -73,7 +73,16 @@ def save_trade_order(asset_symbol, coins, strategy_name, ratio, db_engine):
     row = {"asset": [asset_symbol], "coins": [coins], "ratio": [ratio], "strategy": [strategy_name]}
     df = pd.DataFrame(row)
     df.to_sql("active_trades", db_engine, if_exists="append", index=False)
-    return df
+    return df.set_index("asset")
+
+
+def delete_trade_order(db_engine, asset_symbol, strategy_name):
+    metadata = sqlalchemy.MetaData()
+    table = sqlalchemy.Table("active_trades", metadata, autoload_with=db_engine)
+    action_to_execute = table.delete().where(table.columns.asset == asset_symbol,
+                                             table.columns.strategy == strategy_name)
+    with db_engine.connect() as connection:
+        connection.execute(action_to_execute)
 
 
 def calc_order_quantity(tick, coins):
@@ -118,7 +127,6 @@ while True:
 
                         new_trade = save_trade_order(asset_symbol=asset, coins=new_coins, strategy_name=strategy.name,
                                                      ratio=ratio_balance, db_engine=engine)
-                        new_trade = new_trade.set_index("asset")
                         strategy.active_assets.append(new_trade)
                         portfolio.active_trades += ratio_balance
                         portfolio.balance = trader.get_balance(0, asset="EUR")
@@ -126,8 +134,7 @@ while True:
 
                 elif action == "SELL":
                     asset_tick = trader.get_exchange_info(asset)
-                    coins_df = strategy.active_assets["coins"].loc[strategy.active_assets["coins"].index == asset]
-                    coins_for_sale = coins_df.iloc[0]
+                    coins_for_sale = strategy.active_assets.loc[asset, "coins"]
                     quantity = calc_order_quantity(asset_tick, coins_for_sale)
                     receipt = trader.post_order(0, asset=asset, quantity=quantity, action=action)
 
@@ -136,6 +143,7 @@ while True:
 
                     elif receipt["status"] == "FILLED":
                         strategy.active_assets = strategy.active_assets.loc[strategy.active_assets.index != asset]
+                        delete_trade_order(engine, asset, strategy.name)
                         portfolio.active_trades -= (strategy.ratio / len(portfolio.assets))
                         portfolio.balance = trader.get_balance(0, asset="EUR")
                         format_order_message(action, asset)
