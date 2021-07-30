@@ -12,6 +12,7 @@ MA2 = 170
 STD = 20
 M30 = ("30m", 1800)
 M15 = ("15m", 900)
+M1 = ("1m", 60)
 H4 = ("4h", 14400)
 H1 = ("1h", 3600)
 LOG_COLUMNS = ["Timestamp", "Asset", "Action", "Price", "Volume", "Strategy"]
@@ -73,7 +74,8 @@ def save_trade_order(asset_symbol, coins, strategy_name, ratio, db_engine):
     row = {"asset": [asset_symbol], "coins": [coins], "ratio": [ratio], "strategy": [strategy_name]}
     df = pd.DataFrame(row)
     df.to_sql("active_trades", db_engine, if_exists="append", index=False)
-    return df.set_index("asset")
+    df = df.set_index("asset")
+    return df
 
 
 def delete_trade_order(db_engine, asset_symbol, strategy_name):
@@ -95,10 +97,13 @@ active_trades = active_trades.set_index("asset")
 
 trader = TraderAPI()
 portfolio = Portfolio(trader.get_balance(0, asset="EUR"))
-crossing_sma = CrossingSMA(MA1, MA2, interval=H4, name="GOLDEN CROSS", balance=0.50, df=active_trades)
-bottom_rsi = BottomRSI(interval=H1, name="RSI DIPS", balance=0.25, df=active_trades)
-bollinger = BollingerBands(interval=M15, name="BOL BANDS", balance=0.25, df=active_trades)
+crossing_sma = CrossingSMA(MA1, MA2, interval=H4, name="GOLDEN CROSS", balance=0.50, db_engine=engine)
+bottom_rsi = BottomRSI(interval=M1, name="RSI DIPS", balance=0.125, db_engine=engine)
+bollinger = BollingerBands(interval=M15, name="BOL BANDS", balance=0.25, db_engine=engine)
+
 strategies = (crossing_sma, bottom_rsi, bollinger)
+portfolio.active_trades += active_trades["ratio"].sum()
+
 
 just_posted = False
 while True:
@@ -122,12 +127,13 @@ while True:
                         break
 
                     elif receipt["status"] == "FILLED":
-                        new_coins = float(receipt["executedQty"]) * 0.997
+                        new_coins = float(receipt["executedQty"]) * 0.998
                         ratio_balance = (strategy.ratio / len(portfolio.assets))
 
                         new_trade = save_trade_order(asset_symbol=asset, coins=new_coins, strategy_name=strategy.name,
                                                      ratio=ratio_balance, db_engine=engine)
-                        strategy.active_assets.append(new_trade)
+                        strategy.active_assets = strategy.set_active_assets(engine)
+                        print(strategy.active_assets)
                         portfolio.active_trades += ratio_balance
                         portfolio.balance = trader.get_balance(0, asset="EUR")
                         format_order_message(action, asset)
@@ -142,8 +148,9 @@ while True:
                         break
 
                     elif receipt["status"] == "FILLED":
-                        strategy.active_assets = strategy.active_assets.loc[strategy.active_assets.index != asset]
                         delete_trade_order(engine, asset, strategy.name)
+                        strategy.active_assets = strategy.set_active_assets(engine)
+                        print(strategy.active_assets)
                         portfolio.active_trades -= (strategy.ratio / len(portfolio.assets))
                         portfolio.balance = trader.get_balance(0, asset="EUR")
                         format_order_message(action, asset)
@@ -153,3 +160,5 @@ while True:
     if just_posted:
         time.sleep(60)
         just_posted = False
+
+# TODO 1: Remove all test code

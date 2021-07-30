@@ -66,7 +66,7 @@ class TraderAPI:
 
         side = kwargs["action"]
         type_ = "MARKET"
-        request = "/api/v3/order/test"
+        request = "/api/v3/order"
         ms_time = round(time.time() * 1000)
 
         query_string = f"symbol={kwargs['asset']}&side={side}&type={type_}&" \

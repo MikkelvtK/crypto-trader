@@ -1,16 +1,24 @@
+import pandas as pd
+
+
 class Strategy:
 
-    def __init__(self, interval, name, ratio, df):
+    def __init__(self, interval, name, ratio, db_engine):
         self.name = name
-        self.active_assets = df.loc[df["strategy"] == self.name]
+        self.active_assets = self.set_active_assets(db_engine)
         self.interval = interval
         self.ratio = ratio
+
+    def set_active_assets(self, db_engine):
+        df = pd.read_sql("active_trades", db_engine)
+        df = df.set_index("asset")
+        return df.loc[df["strategy"] == self.name]
 
 
 class CrossingSMA(Strategy):
 
-    def __init__(self, ma1, ma2, interval, name, balance, df):
-        super().__init__(interval, name, balance, df)
+    def __init__(self, ma1, ma2, interval, name, balance, db_engine):
+        super().__init__(interval, name, balance, db_engine)
         self.ma1 = ma1
         self.ma2 = ma2
 
@@ -26,26 +34,26 @@ class CrossingSMA(Strategy):
 
 class BottomRSI(Strategy):
 
-    def __init__(self, interval, name, balance, df):
-        super().__init__(interval, name, balance, df)
+    def __init__(self, interval, name, balance, db_engine):
+        super().__init__(interval, name, balance, db_engine)
         self.counter = 0
 
     def check_for_signal(self, df, asset):
         if asset in self.active_assets:
             self.counter += 1
 
-        if df["RSI"].iloc[-1] < 30 and asset not in self.active_assets.index.values:
+        if df["RSI"].iloc[-1] < 80 and asset not in self.active_assets.index.values:
             return "BUY"
 
-        elif (df["RSI"].iloc[-1] >= 40 or self.counter == 5) and asset in self.active_assets.index.values:
+        elif (df["RSI"].iloc[-1] >= 20 or self.counter == 5) and asset in self.active_assets.index.values:
             self.counter = 0
             return "SELL"
 
 
 class BollingerBands(Strategy):
 
-    def __init__(self, interval, name, balance, df):
-        super().__init__(interval, name, balance, df)
+    def __init__(self, interval, name, balance, db_engine):
+        super().__init__(interval, name, balance, db_engine)
         self.highest = 0
         self.trail = 0
 
