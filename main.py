@@ -74,8 +74,6 @@ def save_trade_order(asset_symbol, coins, strategy_name, ratio, db_engine):
     row = {"asset": [asset_symbol], "coins": [coins], "ratio": [ratio], "strategy": [strategy_name]}
     df = pd.DataFrame(row)
     df.to_sql("active_trades", db_engine, if_exists="append", index=False)
-    df = df.set_index("asset")
-    return df
 
 
 def delete_trade_order(db_engine, asset_symbol, strategy_name):
@@ -98,7 +96,7 @@ active_trades = active_trades.set_index("asset")
 trader = TraderAPI()
 portfolio = Portfolio(trader.get_balance(0, asset="EUR"))
 crossing_sma = CrossingSMA(MA1, MA2, interval=H4, name="GOLDEN CROSS", balance=0.50, db_engine=engine)
-bottom_rsi = BottomRSI(interval=M1, name="RSI DIPS", balance=0.125, db_engine=engine)
+bottom_rsi = BottomRSI(interval=H1, name="RSI DIPS", balance=0.25, db_engine=engine)
 bollinger = BollingerBands(interval=M15, name="BOL BANDS", balance=0.25, db_engine=engine)
 
 strategies = (crossing_sma, bottom_rsi, bollinger)
@@ -130,10 +128,9 @@ while True:
                         new_coins = float(receipt["executedQty"]) * 0.998
                         ratio_balance = (strategy.ratio / len(portfolio.assets))
 
-                        new_trade = save_trade_order(asset_symbol=asset, coins=new_coins, strategy_name=strategy.name,
-                                                     ratio=ratio_balance, db_engine=engine)
+                        save_trade_order(asset_symbol=asset, coins=new_coins, strategy_name=strategy.name,
+                                         ratio=ratio_balance, db_engine=engine)
                         strategy.active_assets = strategy.set_active_assets(engine)
-                        print(strategy.active_assets)
                         portfolio.active_trades += ratio_balance
                         portfolio.balance = trader.get_balance(0, asset="EUR")
                         format_order_message(action, asset)
@@ -150,7 +147,6 @@ while True:
                     elif receipt["status"] == "FILLED":
                         delete_trade_order(engine, asset, strategy.name)
                         strategy.active_assets = strategy.set_active_assets(engine)
-                        print(strategy.active_assets)
                         portfolio.active_trades -= (strategy.ratio / len(portfolio.assets))
                         portfolio.balance = trader.get_balance(0, asset="EUR")
                         format_order_message(action, asset)
@@ -160,5 +156,3 @@ while True:
     if just_posted:
         time.sleep(60)
         just_posted = False
-
-# TODO 1: Remove all test code
