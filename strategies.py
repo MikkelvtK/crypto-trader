@@ -58,8 +58,6 @@ class BollingerBands(Strategy):
         self.trail = 0
 
     def check_for_signal(self, df, asset):
-        print(self.active_assets.index.values)
-
         if asset in self.active_assets.index.values:
             if df["Price"].iloc[-1] > self.highest:
                 self.highest = df["Price"].iloc[-1]

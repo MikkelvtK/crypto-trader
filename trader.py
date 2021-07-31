@@ -100,6 +100,7 @@ class TraderAPI:
         if response.ok:
             return response.json()
         else:
-            print("There are some issues with the API connection. Please HODL.")
+            print("Please HODL. There is an issue with the API:")
+            print(response.text)
             time.sleep(5)
             return func(n+1, **kwargs)
