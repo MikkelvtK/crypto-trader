@@ -138,7 +138,7 @@ bollinger = BollingerBands(interval=M15, name="BOL BANDS", balance=0.25, db_engi
 
 # Prepare instances
 strategies = (crossing_sma, bottom_rsi, bollinger)
-user_portfolio.active_trades += active_trades["ratio"].sum()
+user_portfolio.active_trades += float(active_trades["ratio"].sum())
 
 # ----- BOT ----- #
 
@@ -184,7 +184,7 @@ while True:
 
                     # Calculate correct amount of coins to sell
                     asset_step_size = get_step_size(api_trader, asset)
-                    coins_for_sale = strategy.active_assets.loc[asset, "coins"]
+                    coins_for_sale = float(strategy.active_assets.loc[asset, "coins"])
                     quantity = calc_order_quantity(asset_step_size, coins_for_sale)
 
                     # Place order
