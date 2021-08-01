@@ -1,8 +1,7 @@
-import requests
 import hashlib
 import hmac
 import time
-import os
+from decorators import *
 
 
 class TraderAPI:
@@ -17,11 +16,9 @@ class TraderAPI:
         symbol_price_ticker = "/api/v3/ticker/price"
         return requests.get(self.endpoint + symbol_price_ticker, params={"symbol": asset}).json()
 
-    def get_history(self, n, **kwargs):
-        if n == 5:
-            print("I failed to connect with the API. Breaking the cycle")
-            return
-
+    @check_response
+    @connection_authenticator
+    def get_history(self, **kwargs):
         candlestick_data = "/api/v3/klines"
 
         params = {
@@ -30,14 +27,11 @@ class TraderAPI:
             "limit": kwargs["limit"],
         }
 
-        response = requests.get(self.endpoint + candlestick_data, params=params, headers=self.header)
-        return self.check_response(self.get_history, n, response, kwargs)
+        return requests.get(self.endpoint + candlestick_data, params=params, headers=self.header)
 
-    def get_balance(self, n, **kwargs):
-        if n == 5:
-            print("I failed to connect with the API. Breaking the cycle")
-            return 0
-
+    @check_response
+    @connection_authenticator
+    def get_balance(self):
         ms_time = round(time.time() * 1000)
         request = "/api/v3/account"
         query_string = f"timestamp={ms_time}"
@@ -48,17 +42,11 @@ class TraderAPI:
             "signature": signature,
         }
 
-        response = requests.get(self.endpoint + request, params=params, headers=self.header)
-        response_json = self.check_response(self.get_balance, n, response, kwargs)
-        for balance in response_json["balances"]:
-            if balance["asset"] == kwargs["asset"]:
-                return float(balance["free"])
+        return requests.get(self.endpoint + request, params=params, headers=self.header)
 
-    def post_order(self, n, **kwargs):
-        if n == 5:
-            print("I failed to connect with the API. Breaking the cycle")
-            return "SKIP"
-
+    @check_response
+    @connection_authenticator
+    def post_order(self, **kwargs):
         if kwargs["action"] == "BUY":
             quantity_type = "quoteOrderQty"
         else:
@@ -66,9 +54,8 @@ class TraderAPI:
 
         side = kwargs["action"]
         type_ = "MARKET"
-        request = "/api/v3/order"
+        request = "/api/v3/order/test"
         ms_time = round(time.time() * 1000)
-
         query_string = f"symbol={kwargs['asset']}&side={side}&type={type_}&" \
                        f"{quantity_type}={kwargs['quantity']}&timestamp={ms_time}"
         signature = hmac.new(self.secret.encode('utf-8'), query_string.encode('utf-8'), hashlib.sha256).hexdigest()
@@ -82,25 +69,13 @@ class TraderAPI:
             "signature": signature,
         }
 
-        response = requests.post(self.endpoint + request, params=params, headers=self.header)
-        return self.check_response(self.post_order, n, response, kwargs)
+        return requests.post(self.endpoint + request, params=params, headers=self.header)
 
+    @check_response
+    @connection_authenticator
     def get_exchange_info(self, asset):
         request = "/api/v3/exchangeInfo"
-        response = requests.get(self.endpoint + request, params={"symbol": asset}).json()
+        return requests.get(self.endpoint + request, params={"symbol": asset})
 
-        for symbol in response["symbols"]:
-            if symbol["symbol"] == asset:
-                for binance_filter in symbol["filters"]:
-                    if binance_filter['filterType'] == 'LOT_SIZE':
-                        return binance_filter['stepSize'].find('1') - 2
 
-    @staticmethod
-    def check_response(func, n, response, kwargs):
-        if response.ok:
-            return response.json()
-        else:
-            print("Please HODL. There is an issue with the API:")
-            print(response.text)
-            time.sleep(5)
-            return func(n+1, **kwargs)
+
