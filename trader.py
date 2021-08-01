@@ -1,6 +1,5 @@
 import hashlib
 import hmac
-import time
 from decorators import *
 
 
@@ -19,6 +18,7 @@ class TraderAPI:
     @check_response
     @connection_authenticator
     def get_history(self, **kwargs):
+        """Get history of asset price data"""
         candlestick_data = "/api/v3/klines"
 
         params = {
@@ -32,8 +32,13 @@ class TraderAPI:
     @check_response
     @connection_authenticator
     def get_balance(self):
+        """Get balances of all assets of user"""
+
+        # Prepare variables
         ms_time = round(time.time() * 1000)
         request = "/api/v3/account"
+
+        # Create hashed signature
         query_string = f"timestamp={ms_time}"
         signature = hmac.new(self.secret.encode('utf-8'), query_string.encode('utf-8'), hashlib.sha256).hexdigest()
 
@@ -47,15 +52,21 @@ class TraderAPI:
     @check_response
     @connection_authenticator
     def post_order(self, **kwargs):
+        """Place a new buy or sell order"""
+
+        # Determine if buy or sell order
         if kwargs["action"] == "BUY":
             quantity_type = "quoteOrderQty"
         else:
             quantity_type = "quantity"
 
+        # Prepare variables
         side = kwargs["action"]
         type_ = "MARKET"
-        request = "/api/v3/order/test"
+        request = "/api/v3/order"
         ms_time = round(time.time() * 1000)
+
+        # Create hashed signature
         query_string = f"symbol={kwargs['asset']}&side={side}&type={type_}&" \
                        f"{quantity_type}={kwargs['quantity']}&timestamp={ms_time}"
         signature = hmac.new(self.secret.encode('utf-8'), query_string.encode('utf-8'), hashlib.sha256).hexdigest()
@@ -74,8 +85,6 @@ class TraderAPI:
     @check_response
     @connection_authenticator
     def get_exchange_info(self, asset):
+        """Get asset information"""
         request = "/api/v3/exchangeInfo"
         return requests.get(self.endpoint + request, params={"symbol": asset})
-
-
-

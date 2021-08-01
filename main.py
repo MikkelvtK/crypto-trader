@@ -1,4 +1,3 @@
-import pandas as pd
 import pandas_ta as pta
 import time
 import sqlalchemy
@@ -32,11 +31,6 @@ def calculate_rsi(df_column, window=14):
     rs = positives.rolling(window).mean() / abs(negatives.rolling(window).mean())
     rsi = 100 - 100 / (1 + rs)
     return rsi
-
-
-def current_ms_time():
-    """Returns UNIX time in ms"""
-    return round(time.time() * 1000)
 
 
 def create_dataframe(symbol, interval, limit):
@@ -139,7 +133,7 @@ active_trades = active_trades.set_index("asset")
 api_trader = TraderAPI()
 user_portfolio = Portfolio(get_balance(api_trader, "EUR"))
 crossing_sma = CrossingSMA(MA1, MA2, interval=H4, name="GOLDEN CROSS", balance=0.50, db_engine=engine)
-bottom_rsi = BottomRSI(interval=M1, name="RSI DIPS", balance=0.25, db_engine=engine)
+bottom_rsi = BottomRSI(interval=H1, name="RSI DIPS", balance=0.25, db_engine=engine)
 bollinger = BollingerBands(interval=M15, name="BOL BANDS", balance=0.25, db_engine=engine)
 
 # Prepare instances
@@ -150,12 +144,12 @@ user_portfolio.active_trades += active_trades["ratio"].sum()
 
 just_posted = False
 while True:
-    current_time = current_ms_time()
+    current_time = time.time()
 
     for strategy in strategies:
 
         # Use UNIX to determine when to load interval data
-        if -1 <= ((current_time / 1000) % strategy.interval[1]) <= 1:
+        if -1 <= (current_time % strategy.interval[1]) <= 1:
             time.sleep(15)
 
             # Test strategy for every asset in Portfolio

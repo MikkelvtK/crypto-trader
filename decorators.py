@@ -10,10 +10,15 @@ def connection_authenticator(func):
     def wrapper(*args, n=0, **kwargs):
         try:
             response = func(*args, **kwargs)
+
         except requests.exceptions.ConnectionError:
+
+            # Restart bot if exception is not resolved
             if n == 3:
                 os.system(config.command)
                 sys.exit("Can't connect to the API. Restarting bot.")
+
+            # Try connecting again
             else:
                 print("There's an issue with the API connection. Please HODL.")
                 time.sleep(5)
