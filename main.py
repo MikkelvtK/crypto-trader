@@ -2,6 +2,7 @@ import pandas_ta as pta
 import time
 import sqlalchemy
 import math
+import config
 from trader import TraderAPI
 from wallet import Portfolio
 from strategies import *
@@ -99,7 +100,7 @@ def show_data_message(df, asset_symbol, strategy_type):
 def show_order_message(order_action, active_asset):
     """Print when order is placed"""
     print(add_border(f"{order_action} ORDER PLACED FOR {active_asset}"))
-    print(add_border(f"NEW BALANCE: {user_portfolio.balance}"))
+    print(add_border(f"NEW BALANCE: {user_portfolio.total_balance}"))
     print(add_border(""))
 
 
@@ -125,7 +126,7 @@ def delete_buy_order(db_engine, asset_symbol, strategy_name):
 # ----- PREPARE BOT ----- #
 
 # Create database connection and load active orders
-engine = sqlalchemy.create_engine("sqlite:///data/trades.db")
+engine = sqlalchemy.create_engine(f"sqlite:///{config.db_path}")
 active_trades = pd.read_sql("active_trades", engine)
 active_trades = active_trades.set_index("asset")
 
@@ -175,7 +176,7 @@ while True:
                         user_portfolio.active_trades += ratio_balance
 
                         # Reload user_portfolio balance and show user
-                        user_portfolio.balance = get_balance(api_trader, "EUR")
+                        user_portfolio.total_balance = get_balance(api_trader, "EUR")
                         show_order_message(action, asset)
 
                 # ----- SELL SIGNAL ----- #
@@ -198,7 +199,7 @@ while True:
                         user_portfolio.active_trades -= (strategy.ratio / len(user_portfolio.assets))
 
                         # Reload balance and show user
-                        user_portfolio.balance = get_balance(api_trader, "EUR")
+                        user_portfolio.total_balance = get_balance(api_trader, "EUR")
                         show_order_message(action, asset)
 
             just_posted = True

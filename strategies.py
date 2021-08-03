@@ -3,11 +3,11 @@ import pandas as pd
 
 class Strategy:
 
-    def __init__(self, interval, name, ratio, db_engine):
+    def __init__(self, interval, name, type):
         self.name = name
-        self.active_assets = self.set_active_assets(db_engine)
         self.interval = interval
         self.ratio = ratio
+        self.type = type
 
     def set_active_assets(self, db_engine):
         """Sets which assets are currently active for the strategy"""

@@ -6,8 +6,8 @@ from decorators import *
 class TraderAPI:
 
     def __init__(self):
-        self.key = os.environ.get("apiKey")
-        self.secret = os.environ.get("apiSecret")
+        self.key = config.apiKey
+        self.secret = config.apiSecret
         self.header = {"X-MBX-APIKEY": self.key}
         self.endpoint = "https://api.binance.com"
 
