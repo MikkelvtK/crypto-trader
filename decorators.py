@@ -37,3 +37,15 @@ def check_response(func):
         else:
             sys.exit(f"Something is wrong. Please fix the following issue:\n {response.text}")
     return wrapper
+
+
+def add_border(func):
+    """Add a border to message"""
+    def wrapper(*args, **kwargs):
+        left_border = "<-------------------------"
+        message = func(*args, **kwargs)
+        right_border = ""
+        while len(left_border + message) < 92:
+            right_border += "-"
+        return left_border + message + right_border + ">"
+    return wrapper
