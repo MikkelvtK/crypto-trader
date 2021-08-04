@@ -53,11 +53,19 @@ class TraderBot:
         pass
 
     @add_border
-    def print_new_data(self, df, symbol, strategy_type):
+    def print_new_data(self, df, symbol, strategy):
         """Print new data result"""
-        print(add_border(f"RETRIEVING DATA FOR {asset_symbol} {strategy_type} STRATEGY"))
-        print(df.iloc[[-1]])
-        print(add_border(""))
+        message = f"RETRIEVING DATA FOR {symbol.upper()} {strategy.name} STRATEGY"
+        data = [f"{index:<15}{item}" for index, item in df.iloc[-1, :].items()]
+        return data.insert(0, message)
+
+    @add_border
+    def print_new_order(self, action, symbol):
+        """Print when order is placed"""
+        new_balance = self.total_balance - self.active_investments["investment"].sum()
+        first_line = f"{action.upper()} ORDER PLACED FOR {symbol.upper()}"
+        second_line = f"NEW BALANCE: {new_balance}"
+        return first_line, second_line
 
     def activate(self):
         current_time = time.time()

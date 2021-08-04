@@ -125,6 +125,7 @@ def delete_buy_order(db_engine, asset_symbol, strategy_name):
 
 # ----- PREPARE BOT ----- #
 
+
 # Create database connection and load active orders
 engine = sqlalchemy.create_engine(f"sqlite:///{config.db_path}")
 active_trades = pd.read_sql("active_trades", engine)
@@ -132,6 +133,8 @@ active_trades = active_trades.set_index("asset")
 
 # Create all instances
 api_trader = TraderAPI()
+df = create_dataframe("VETEUR", "4h", 10)
+
 user_portfolio = Portfolio(get_balance(api_trader, "EUR"))
 crossing_sma = CrossingSMA(MA1, MA2, interval=H4, name="GOLDEN CROSS", balance=0.50, db_engine=engine)
 bottom_rsi = BottomRSI(interval=H1, name="RSI DIPS", balance=0.25, db_engine=engine)

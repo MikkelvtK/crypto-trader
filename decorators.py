@@ -42,10 +42,15 @@ def check_response(func):
 def add_border(func):
     """Add a border to message"""
     def wrapper(*args, **kwargs):
-        left_border = "<-------------------------"
-        message = func(*args, **kwargs)
-        right_border = ""
-        while len(left_border + message) < 92:
-            right_border += "-"
-        return left_border + message + right_border + ">"
+        data = func(*args, **kwargs)
+        for i in range(len(data) + 1):
+            try:
+                text = data[i]
+            except IndexError:
+                text = ""
+            left_border = "<-------------------------"
+            right_border = ""
+            while len(left_border + text + right_border) < 92:
+                right_border += "-"
+            print(left_border + text + right_border + ">")
     return wrapper
