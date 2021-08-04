@@ -1,6 +1,6 @@
-import pandas as pd
 import sqlalchemy
 from decorators import *
+from functions import *
 
 MA1 = 40
 MA2 = 170
@@ -38,14 +38,24 @@ class TraderBot:
         }
         return available_dict
 
-    def place_buy_order(self, strategy, asset):
-        if strategy.type == "long":
-            active_assets = self.active_investments[self.active_investments["type"] == "long"].count()
+    def prepare_buy_order(self, strategy, asset):
+        long = self.active_investments.loc[self.active_investments["type"] == "long"]
+        short = self.active_investments.loc[self.active_investments["type"] == "short"]
+        if strategy.type == "long" and asset not in long.index.values:
+            active_assets = long["type"].count()
             available_assets = len(strategy.assets) - active_assets
             investment = round(self.available_to_invest["available long"] / available_assets, 2)
+        elif strategy.type == "short" and short["type"].count() < 2:
+            modifier = 0.5
+            if short["type"].count() == 1:
+                modifier = 1
+            round(self.available_to_invest["available short"] * modifier, 2)
         else:
-            investment = round(self.available_to_invest["available short"], 2)
-        receipt = self.api.post_order(asset=asset, quantity=investment, action="quoteOrderQty")
+            investment = False
+        return investment
+
+    def place_buy_order(self, strategy, asset):
+        receipt = self.api.post_order(asset=asset, quantity=5, action="quoteOrderQty")
         if receipt["status"].lower() == "filled":
             return receipt
 
@@ -55,7 +65,7 @@ class TraderBot:
     @add_border
     def print_new_data(self, df, symbol, strategy):
         """Print new data result"""
-        message = f"RETRIEVING DATA FOR {symbol.upper()} {strategy.name} STRATEGY"
+        message = f"RETRIEVING DATA FOR {symbol} {strategy.name} STRATEGY"
         data = [f"{index:<15}{item}" for index, item in df.iloc[-1, :].items()]
         return data.insert(0, message)
 
@@ -76,9 +86,14 @@ class TraderBot:
                 time.sleep(15)
 
                 for asset in strategy.assets:
-                    new_df = create_dataframe(asset, strategy.interval[0], MA2)
+                    new_df = create_dataframe(self.api, asset, strategy.interval[0], MA2)
+                    self.print_new_data(new_df, asset, strategy)
+                    action = strategy.check_for_signal(new_df, asset)
 
-
+                    if action == "buy":
+                        long = self.active_investments.loc[self.active_investments["type"] == "long"]
+                        short = self.active_investments.loc[self.active_investments["type"] == "short"].count()
+                        if asset not in long.index.values and strategy.type == "long":
 
 
 
