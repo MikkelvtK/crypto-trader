@@ -62,30 +62,36 @@ class BottomRSI(Strategy):
 
 class BollingerBands(Strategy):
 
-    def __init__(self, interval, name, balance, db_engine):
-        super().__init__(interval, name, balance, db_engine)
-        self.highest = 0
-        self.trail = 0
+    def __init__(self, interval, name, balance):
+        super().__init__(interval, name, balance)
+        self.trailing_stop_losses = []
 
     def check_for_signal(self, df, asset):
         """Check if current data gives off a buy or sell signal"""
-
-        # Calculate the trailing stop loss
-        if asset in self.active_assets.index.values:
-            if df["Price"].iloc[-1] > self.highest:
-                self.highest = df["Price"].iloc[-1]
-                self.trail = self.highest * 0.95
+        current_price = df["Price"].iloc[-1]
 
         # Determine if price dips below lower Bollinger band and RSI < 30
         if df["Price"].iloc[-1] < df["Lower"].iloc[-1] and df["RSI"].iloc[-1] < 30:
-            if asset not in self.active_assets.index.values:
-                self.highest = df["Price"].iloc[-1]
-                self.trail = self.highest * 0.95
-                return "BUY"
+            trailing_stop_loss = TrailingStopLoss(asset, current_price) # Dit moet ik nog even nakijken. Werkt zo niet goed
+            self.trailing_stop_losses.append(trailing_stop_loss)
+            return "buy"
 
-        # Determine if price is above upper Bollinger band
-        elif self.trail != 0 and asset in self.active_assets.index.values:
-            if df["Price"].iloc[-1] > df["Upper"].iloc[-1] or df["Price"].iloc[-1] < self.trail:
-                self.highest = 0
-                self.trail = 0
-                return "SELL"
+        # Calculate the trailing stop loss
+        for stop_loss in self.trailing_stop_losses:
+            if stop_loss.asset == asset:
+                if current_price > stop_loss.highest:
+                    stop_loss.highest = current_price
+                    stop_loss.trail = stop_loss.highest * 0.95
+
+                # Determine if price is above upper Bollinger band
+                if current_price > df["Upper"].iloc[-1] or df["Price"].iloc[-1] < stop_loss.trail:
+                    self.trailing_stop_losses.remove(stop_loss)
+                    return "sell"
+
+
+class TrailingStopLoss:
+
+    def __init__(self, symbol, current_price):
+        self.asset = symbol
+        self.highest = current_price
+        self.trail = self.highest * 0.95

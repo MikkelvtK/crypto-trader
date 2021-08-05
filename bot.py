@@ -38,29 +38,39 @@ class TraderBot:
         }
         return available_dict
 
-    def prepare_buy_order(self, strategy, asset):
+    def check_available_balance(self, strategy, asset):
         long = self.active_investments.loc[self.active_investments["type"] == "long"]
         short = self.active_investments.loc[self.active_investments["type"] == "short"]
         if strategy.type == "long" and asset not in long.index.values:
             active_assets = long["type"].count()
             available_assets = len(strategy.assets) - active_assets
-            investment = round(self.available_to_invest["available long"] / available_assets, 2)
+            available_balance = round(self.available_to_invest["available long"] / available_assets, 2)
         elif strategy.type == "short" and short["type"].count() < 2:
             modifier = 0.5
             if short["type"].count() == 1:
                 modifier = 1
-            round(self.available_to_invest["available short"] * modifier, 2)
+            available_balance = round(self.available_to_invest["available short"] * modifier, 2)
         else:
-            investment = False
-        return investment
+            available_balance = 0
+        return available_balance
 
-    def place_buy_order(self, strategy, asset):
-        receipt = self.api.post_order(asset=asset, quantity=5, action="quoteOrderQty")
+    def check_sell_order(self, symbol, strategy):
+        active_trades = self.active_investments.loc[self.active_investments["strategy"] == strategy.name]
+        if symbol in active_trades.index.values:
+            coins_for_sale = float(active_trades.loc[symbol, "coins"])
+            return coins_for_sale
+        return 0
+
+    def place_buy_order(self, symbol):
+        receipt = self.api.post_order(asset=symbol, quantity=5, action="quoteOrderQty")
         if receipt["status"].lower() == "filled":
             return receipt
 
-    def place_sell_order(self, strategy, asset):
-        pass
+    def place_sell_order(self, symbol, coins):
+        order_quantity = calc_true_order_quantity(self.api, symbol, coins)
+        receipt = self.api.post_order(asset=symbol, quantity=order_quantity, action="quantity")
+        if receipt["status"] == "FILLED":
+            return receipt
 
     @add_border
     def print_new_data(self, df, symbol, strategy):
@@ -77,40 +87,67 @@ class TraderBot:
         second_line = f"NEW BALANCE: {new_balance}"
         return first_line, second_line
 
+    def log_buy_order(self, symbol, coins, investment, strategy):
+        """Saves active orders to load when restarting."""
+        row = {"asset": [symbol], "coins": [coins], "investment": [investment],
+               "strategy": [strategy.name], "type": [strategy.type]}
+        df = pd.DataFrame(row)
+        df.to_sql("active_trades", self.engine, if_exists="append", index=False)
+
+    def delete_buy_order(self, symbol, strategy):
+        """Delete buy order from database when asset is sold."""
+        metadata = sqlalchemy.MetaData()
+        table = sqlalchemy.Table("active_trades", metadata, autoload_with=self.engine)
+        action_to_execute = table.delete().where(table.columns.asset == symbol,
+                                                 table.columns.strategy == strategy.name)
+        with self.engine.connect() as connection:
+            connection.execute(action_to_execute)
+
     def activate(self):
-        current_time = time.time()
+        just_posted = False
 
-        for strategy in self.strategies:
+        while True:
+            current_time = time.time()
 
-            if -1 <= (current_time % strategy.interval[1]) <= 1:
-                time.sleep(15)
+            for strategy in self.strategies:
 
-                for asset in strategy.assets:
-                    new_df = create_dataframe(self.api, asset, strategy.interval[0], MA2)
-                    self.print_new_data(new_df, asset, strategy)
-                    action = strategy.check_for_signal(new_df, asset)
+                if -1 <= (current_time % strategy.interval[1]) <= 1:
+                    time.sleep(15)
 
-                    if action == "buy":
-                        long = self.active_investments.loc[self.active_investments["type"] == "long"]
-                        short = self.active_investments.loc[self.active_investments["type"] == "short"].count()
-                        if asset not in long.index.values and strategy.type == "long":
+                    for asset in strategy.assets:
+                        new_df = create_dataframe(self.api, asset.upper(), strategy.interval[0], MA2)
+                        self.print_new_data(new_df, asset.upper(), strategy)
+                        action = strategy.check_for_signal(new_df, asset.upper())
 
+                        if action == "buy":
 
+                            investment = self.check_available_balance(strategy, asset.upper())
 
+                            if investment == 0:
+                                continue
 
+                            order_receipt = self.place_buy_order(asset.upper())
+                            bought_coins = float(order_receipt["executedQty"]) * 0.999
+                            self.log_buy_order(asset, bought_coins, investment, strategy)
+                            self.available_to_invest = self.set_available_investments()
+                            self.print_new_order(action.upper(), asset)
 
+                        if action == "sell":
 
+                            coins_for_sale = self.check_sell_order(asset, strategy)
 
+                            if coins_for_sale == 0:
+                                continue
 
+                            order_receipt = self.place_sell_order(asset.upper(), coins_for_sale)
+                            self.delete_buy_order(asset, strategy)
+                            self.total_balance = self.set_current_balance()
+                            self.active_investments = self.set_active_investments()
+                            self.available_to_invest = self.set_available_investments()
+                            self.print_new_order(action.upper(), asset)
 
+                    just_posted = True
 
-
-
-
-
-
-
-
-
-
-
+            if just_posted:
+                time.sleep(60)
+                just_posted = False
