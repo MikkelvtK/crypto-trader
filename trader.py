@@ -54,28 +54,22 @@ class TraderAPI:
     def post_order(self, **kwargs):
         """Place a new buy or sell order"""
 
-        # Determine if buy or sell order
-        if kwargs["action"] == "BUY":
-            quantity_type = "quoteOrderQty"
-        else:
-            quantity_type = "quantity"
-
         # Prepare variables
         side = kwargs["action"]
         type_ = "MARKET"
-        request = "/api/v3/order"
+        request = "/api/v3/order/test"
         ms_time = round(time.time() * 1000)
 
         # Create hashed signature
         query_string = f"symbol={kwargs['asset']}&side={side}&type={type_}&" \
-                       f"{quantity_type}={kwargs['quantity']}&timestamp={ms_time}"
+                       f"{kwargs['manner']}={kwargs['quantity']}&timestamp={ms_time}"
         signature = hmac.new(self.secret.encode('utf-8'), query_string.encode('utf-8'), hashlib.sha256).hexdigest()
 
         params = {
             "symbol": kwargs["asset"],
             "side": side,
             "type": type_,
-            quantity_type: kwargs["quantity"],
+            kwargs["manner"]: kwargs["quantity"],
             "timestamp": ms_time,
             "signature": signature,
         }

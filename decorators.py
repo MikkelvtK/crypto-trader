@@ -48,7 +48,7 @@ def add_border(func):
                 text = data[i]
             except IndexError:
                 text = ""
-            left_border = "<-------------------------"
+            left_border = "<-------------------"
             right_border = ""
             while len(left_border + text + right_border) < 92:
                 right_border += "-"
