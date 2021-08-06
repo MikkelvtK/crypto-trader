@@ -50,7 +50,7 @@ def add_border(func):
                 text = ""
             left_border = "<-------------------"
             right_border = ""
-            while len(left_border + text + right_border) < 92:
+            while len(left_border + text + right_border) < 80:
                 right_border += "-"
             print(left_border + text + right_border + ">")
     return wrapper

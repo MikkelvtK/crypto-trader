@@ -15,15 +15,15 @@ class CrossingSMA(Strategy):
         self.ma1 = ma1
         self.ma2 = ma2
 
-    def check_for_signal(self, df, symbol):
+    def check_for_signal(self, df, active, symbol):
         """Check if current data gives off a buy or sell signal"""
 
         # If short SMA > long SMA give off buy signal
-        if df[f"SMA_{self.ma1}"].iloc[-1] > df[f"SMA_{self.ma2}"].iloc[-1]:
+        if df[f"SMA_{self.ma1}"].iloc[-1] > df[f"SMA_{self.ma2}"].iloc[-1] and not active:
             return "buy"
 
         # If long SMA > short SMA give off sell signal
-        elif df[f"SMA_{self.ma1}"].iloc[-1] < df[f"SMA_{self.ma2}"].iloc[-1]:
+        elif df[f"SMA_{self.ma1}"].iloc[-1] < df[f"SMA_{self.ma2}"].iloc[-1] and active:
             return "sell"
 
 
@@ -34,12 +34,12 @@ class BottomRSI(Strategy):
         self.current_price = 0
         self.active_stop_losses = []
 
-    def check_for_signal(self, df, symbol):
+    def check_for_signal(self, df, active, symbol):
         """Check if current data gives off a buy or sell signal"""
         self.current_price = df["Price"].iloc[-1]
 
         # When RSI < 30 give off buy signal
-        if df["RSI"].iloc[-1] < 30:
+        if df["RSI"].iloc[-1] < 30 and not active:
             return "buy"
 
         # Calculate the trailing stop loss
@@ -50,7 +50,7 @@ class BottomRSI(Strategy):
                     stop_loss.trail = stop_loss.highest * 0.95
 
                 # When RSI >= 40 give off sell signal
-                if df["RSI"].iloc[-1] >= 40 or self.current_price < stop_loss.trail:
+                if df["RSI"].iloc[-1] >= 40 or self.current_price < stop_loss.trail and active:
                     return "sell"
 
 
@@ -61,12 +61,12 @@ class BollingerBands(Strategy):
         self.current_price = 0
         self.active_stop_losses = []
 
-    def check_for_signal(self, df, symbol):
+    def check_for_signal(self, df, active, symbol):
         """Check if current data gives off a buy or sell signal"""
         self.current_price = df["Price"].iloc[-1]
 
         # Determine if price dips below lower Bollinger band and RSI < 30
-        if self.current_price < df["Lower"].iloc[-1] and df["RSI"].iloc[-1] < 30:
+        if self.current_price < df["Lower"].iloc[-1] and df["RSI"].iloc[-1] < 30 and not active:
             return "buy"
 
         # Calculate the trailing stop loss
@@ -77,7 +77,7 @@ class BollingerBands(Strategy):
                     stop_loss.trail = stop_loss.highest * 0.95
 
                 # Determine if price is above upper Bollinger band
-                if self.current_price > df["Upper"].iloc[-1] or self.current_price < stop_loss.trail:
+                if self.current_price > df["Upper"].iloc[-1] or self.current_price < stop_loss.trail and active:
                     return "sell"
 
 

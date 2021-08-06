@@ -14,8 +14,8 @@ class TraderBot:
         self.api = api
         self.strategies = strategies
         self.engine = sqlalchemy.create_engine(f"sqlite:///{config.db_path}")
-        self.total_balance = self.set_current_balance()
         self.active_investments = self.set_active_investments()
+        self.total_balance = self.set_current_balance()
         self.available_to_invest = self.set_available_investments()
         self.active_stop_losses = []
 
@@ -42,28 +42,31 @@ class TraderBot:
     def check_available_balance(self, strategy, asset):
         long = self.active_investments.loc[self.active_investments["type"] == "long"]
         short = self.active_investments.loc[self.active_investments["type"] == "short"]
-        if strategy.type == "long" and asset not in long["asset"].values:
+        if strategy.type == "long":
             active_assets = long["type"].count()
             available_assets = len(strategy.assets) - active_assets
-            available_balance = round(self.available_to_invest["available long"] / available_assets, 2)
-        elif strategy.type == "short" and short["type"].count() < 2 and asset not in short["asset"].values:
+            return float(round(self.available_to_invest["available long"] / available_assets, 2))
+        elif strategy.type == "short" and short["type"].count() < 2:
             modifier = 0.5
             if short["type"].count() == 1:
                 modifier = 1
-            available_balance = round(self.available_to_invest["available short"] * modifier, 2)
-        else:
-            available_balance = 0
-        return available_balance
+            return float(round(self.available_to_invest["available short"] * modifier, 2))
+        return False
+
+    def is_asset_active(self, strategy, symbol):
+        active_trades = self.active_investments.loc[self.active_investments["strategy"] == strategy.name]
+        if symbol in active_trades["asset"].values:
+            return True
+        return False
 
     def check_sell_order(self, symbol, strategy):
         active_trades = self.active_investments.loc[self.active_investments["strategy"] == strategy.name]
         if symbol in active_trades["asset"].values:
-            coins_for_sale = float(active_trades.loc[symbol, "coins"])
-            return coins_for_sale
-        return 0
+            return float(active_trades.loc[active_trades["asset"] == symbol, "coins"])
+        return False
 
-    def place_buy_order(self, symbol):
-        receipt = self.api.post_order(asset=symbol.upper(), quantity=5, manner="quoteOrderQty", action="BUY")
+    def place_buy_order(self, symbol, investment):
+        receipt = self.api.post_order(asset=symbol.upper(), quantity=investment, manner="quoteOrderQty", action="BUY")
         if receipt["status"].lower() == "filled":
             return True, receipt
         return False, None
@@ -79,15 +82,15 @@ class TraderBot:
     def print_new_data(self, df, symbol, strategy):
         """Print new data result"""
         message = f"RETRIEVING DATA FOR {symbol.upper()} {strategy.name.upper()} STRATEGY"
-        data = [f"{index:<15}{item}" for index, item in df.iloc[-1, :].items()]
-        return data.insert(0, message)
+        data = [f"{index:<15}{round(item, 4)}" for index, item in df.iloc[-1, :].items()]
+        return [message] + data
 
     @add_border
     def print_new_order(self, action, symbol):
         """Print when order is placed"""
         new_balance = self.total_balance - self.active_investments["investment"].sum()
         first_line = f"{action.upper()} ORDER PLACED FOR {symbol.upper()}"
-        second_line = f"NEW BALANCE: {new_balance}"
+        second_line = f"NEW BALANCE: {round(new_balance, 2)}"
         return first_line, second_line
 
     def log_buy_order(self, symbol, coins, investment, strategy):
@@ -121,20 +124,22 @@ class TraderBot:
 
                         new_df = create_dataframe(self.api, asset.upper(), strategy.interval[0], MA2)
                         self.print_new_data(new_df, asset, strategy)
-                        action = strategy.check_for_signal(new_df, asset)
+                        is_active = self.is_asset_active(strategy, asset)
+                        action = strategy.check_for_signal(new_df, is_active, asset)
 
                         if action == "buy":
 
                             investment = self.check_available_balance(strategy, asset)
 
-                            if investment == 0:
+                            if investment is False:
                                 continue
 
-                            asset_bought, order_receipt = self.place_buy_order(asset)
+                            asset_bought, order_receipt = self.place_buy_order(asset, investment)
 
                             if asset_bought:
                                 bought_coins = float(order_receipt["executedQty"]) * 0.999
                                 self.log_buy_order(asset, bought_coins, investment, strategy)
+                                self.active_investments = self.set_active_investments()
                                 self.available_to_invest = self.set_available_investments()
                                 self.print_new_order(action, asset)
 
@@ -146,15 +151,15 @@ class TraderBot:
 
                             coins_for_sale = self.check_sell_order(asset, strategy)
 
-                            if coins_for_sale == 0:
+                            if coins_for_sale is False:
                                 continue
 
                             asset_sold = self.place_sell_order(asset, coins_for_sale)
 
                             if asset_sold:
                                 self.delete_buy_order(asset, strategy)
-                                self.total_balance = self.set_current_balance()
                                 self.active_investments = self.set_active_investments()
+                                self.total_balance = self.set_current_balance()
                                 self.available_to_invest = self.set_available_investments()
                                 self.print_new_order(action, asset)
 

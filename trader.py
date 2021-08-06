@@ -57,7 +57,7 @@ class TraderAPI:
         # Prepare variables
         side = kwargs["action"]
         type_ = "MARKET"
-        request = "/api/v3/order/test"
+        request = "/api/v3/order"
         ms_time = round(time.time() * 1000)
 
         # Create hashed signature

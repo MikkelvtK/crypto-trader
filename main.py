@@ -15,12 +15,18 @@ H1 = ("1h", 3600)
 # ----- PREPARE BOT ----- #
 
 # Create all instances
-api_trader = TraderAPI()
-crossing_sma = CrossingSMA(MA1, MA2, interval=H4, assets=["veteur", "linkeur"], name="golden cross")
-bottom_rsi = BottomRSI(interval=H1, assets=["veteur", "linkeur"], name="rsi dips")
-bollinger = BollingerBands(interval=M15, assets=["veteur", "linkeur", "adaeur"], name="bol bands")
-strategies = (crossing_sma, bottom_rsi, bollinger)
 
-bot = TraderBot("john", api_trader, strategies)
+def main():
+    api_trader = TraderAPI()
+    crossing_sma = CrossingSMA(MA1, MA2, interval=H4, assets=["veteur", "linkeur"], name="golden cross")
+    bottom_rsi = BottomRSI(interval=H1, assets=["veteur"], name="rsi dips")
+    bollinger = BollingerBands(interval=M15, assets=["veteur", "linkeur", "adaeur"], name="bol bands")
+    strategies = (crossing_sma, bottom_rsi, bollinger)
 
-bot.activate()
+    bot = TraderBot("john", api_trader, strategies)
+
+    bot.activate()
+
+
+if __name__ == "__main__":
+    main()
