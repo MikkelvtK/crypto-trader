@@ -25,16 +25,32 @@ The strategies used are:
 The project will mostly run out of the box. Just a few things need to be done.
 
 * Clone the project.
-* Add your Binance API key and secret to the environment variables.
-* Change the assets you want to trade in the wallet.py file.
+* Create a config.py
+* To the config.py add:
+  * Binance API and secret
+  * Command to restart bot
+  * path to databases
+```
+command = your_command_to_restart
+apiKey = your_api_key
+apiSecret = your_api_secret
+db_path = your_database_path
+```
+
+* Change the assets you want to trade in main.py if you want.
 * If you want to leave out any strategy you can remove them from the tuple in main.py:
 ```
 strategies = (crossing_sma, bottom_rsi, bollinger)
 ```
 
+### Newest Release:
+
+* Overhauls the financial management system
+* Moves the bot to his own class
+
 ### Under Development:
 
+* Any bug fixes that may arise during testing
 * Adding a notification system when trade orders have been placed.
 * A weekly summary displaying how the bot has performed.
-* Any bug fixes that may arise
-* Refactoring code for optimization and documentation
+
