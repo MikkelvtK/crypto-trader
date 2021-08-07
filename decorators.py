@@ -18,7 +18,7 @@ def connection_authenticator(func):
                 os.system(config.command)
                 sys.exit("Can't connect to the API. Restarting bot.")
 
-            # Try connecting again
+            # Try connecting again, max 3 times
             else:
                 print("There's an issue with the API connection. Please HODL.")
                 time.sleep(5)
@@ -32,6 +32,7 @@ def check_response(func):
     """Checks if the response is as expected"""
     def wrapper(*args, **kwargs):
         response = func(*args, **kwargs)
+
         if response.ok:
             return response.json()
         else:
@@ -43,14 +44,19 @@ def add_border(func):
     """Add a border to message"""
     def wrapper(*args, **kwargs):
         data = func(*args, **kwargs)
+
+        # Add border for each row in message
         for i in range(len(data) + 1):
             try:
                 text = data[i]
             except IndexError:
                 text = ""
+
             left_border = "<-------------------"
             right_border = ""
+
             while len(left_border + text + right_border) < 80:
                 right_border += "-"
+
             print(left_border + text + right_border + ">")
     return wrapper
