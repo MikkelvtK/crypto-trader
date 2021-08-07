@@ -1,17 +1,14 @@
 import pandas as pd
 import pandas_ta as pta
 import math
-
-MA1 = 40
-MA2 = 170
-STD = 20
+from constants import *
 
 
-def create_dataframe(api, symbol, interval, limit):
+def create_dataframe(api, asset_symbol, interval, limit):
     """Cleans data for the bot to use"""
 
     # Create and clean initial DataFrame
-    df = pd.DataFrame(api.get_history(symbol=symbol, interval=interval, limit=limit))
+    df = pd.DataFrame(api.get_history(symbol=asset_symbol, interval=interval, limit=limit))
     df = df.drop(columns=df.iloc[:, 2:].columns)
     df.columns = ["Open Time", "Price"]
     df = df.set_index("Open Time")
@@ -32,10 +29,10 @@ def create_dataframe(api, symbol, interval, limit):
     return df
 
 
-def calc_true_order_quantity(trader, symbol, coins):
+def calc_true_order_quantity(trader, asset_symbol, coins):
     """Get the step size for crypto currencies used by the api"""
-    for asset in trader.get_exchange_info(symbol)["symbols"]:
-        if asset["symbol"] == symbol:
+    for asset in trader.get_exchange_info(asset_symbol)["symbols"]:
+        if asset["symbol"] == asset_symbol:
             for binance_filter in asset["filters"]:
                 if binance_filter['filterType'] == 'LOT_SIZE':
                     step_size = binance_filter['stepSize'].find('1') - 2

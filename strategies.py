@@ -15,7 +15,7 @@ class CrossingSMA(Strategy):
         self.ma1 = ma1
         self.ma2 = ma2
 
-    def check_for_signal(self, df, active, symbol):
+    def check_for_signal(self, df, active, **kwargs):
         """Check if current data gives off a buy or sell signal"""
 
         # If short SMA > long SMA give off buy signal
@@ -34,7 +34,7 @@ class BottomRSI(Strategy):
         self.current_price = 0
         self.active_stop_losses = []
 
-    def check_for_signal(self, df, active, symbol):
+    def check_for_signal(self, df, active, **kwargs):
         """Check if current data gives off a buy or sell signal"""
         self.current_price = df["Price"].iloc[-1]
 
@@ -44,7 +44,7 @@ class BottomRSI(Strategy):
 
         # Calculate the trailing stop loss
         for stop_loss in self.active_stop_losses:
-            if stop_loss.asset == symbol:
+            if stop_loss.asset == kwargs["asset_symbol"]:
                 if self.current_price > stop_loss.highest:
                     stop_loss.highest = self.current_price
                     stop_loss.trail = stop_loss.highest * 0.95
@@ -61,7 +61,7 @@ class BollingerBands(Strategy):
         self.current_price = 0
         self.active_stop_losses = []
 
-    def check_for_signal(self, df, active, symbol):
+    def check_for_signal(self, df, active, **kwargs):
         """Check if current data gives off a buy or sell signal"""
         self.current_price = df["Price"].iloc[-1]
 
@@ -71,7 +71,7 @@ class BollingerBands(Strategy):
 
         # Calculate the trailing stop loss
         for stop_loss in self.active_stop_losses:
-            if stop_loss.asset == symbol:
+            if stop_loss.asset == kwargs["asset_symbol"]:
                 if self.current_price > stop_loss.highest:
                     stop_loss.highest = self.current_price
                     stop_loss.trail = stop_loss.highest * 0.95
@@ -83,7 +83,8 @@ class BollingerBands(Strategy):
 
 class TrailingStopLoss:
 
-    def __init__(self, symbol, current_price):
-        self.asset = symbol
+    def __init__(self, strategy_name, asset_symbol, current_price):
+        self.strategy_name = strategy_name
+        self.asset = asset_symbol
         self.highest = current_price
         self.trail = self.highest * 0.95

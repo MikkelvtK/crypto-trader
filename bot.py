@@ -1,10 +1,8 @@
 import sqlalchemy
 from decorators import *
 from functions import *
+from constants import *
 from strategies import TrailingStopLoss
-
-MA1 = 40
-MA2 = 170
 
 
 class TraderBot:
@@ -44,10 +42,10 @@ class TraderBot:
 
     # ----- CHECKS FOR CONDITIONS ----- #
 
-    def is_asset_active(self, strategy, symbol):
+    def is_asset_active(self, strategy, asset_symbol):
         """Checks if the asset already has an active investment for the strategy"""
         active_trades = self.active_investments.loc[self.active_investments["strategy"] == strategy.name]
-        if symbol in active_trades["asset"].values:
+        if asset_symbol in active_trades["asset"].values:
             return True
         return False
 
@@ -71,26 +69,28 @@ class TraderBot:
 
         return False
 
-    def check_sell_order(self, symbol, strategy):
+    def check_sell_order(self, asset_symbol, strategy):
         """Checks if placing a sell order is warranted"""
         active_trades = self.active_investments.loc[self.active_investments["strategy"] == strategy.name]
-        if symbol in active_trades["asset"].values:
-            return float(active_trades.loc[active_trades["asset"] == symbol, "coins"])
+        if asset_symbol in active_trades["asset"].values:
+            return float(active_trades.loc[active_trades["asset"] == asset_symbol, "coins"])
         return False
 
     # ----- PLACE ORDERS ----- #
 
-    def place_buy_order(self, symbol, investment):
+    def place_buy_order(self, asset_symbol, investment):
         """Places buy order for the API"""
-        receipt = self.api.post_order(asset=symbol.upper(), quantity=investment, manner="quoteOrderQty", action="BUY")
+        receipt = self.api.post_order(asset=asset_symbol.upper(), quantity=investment,
+                                      manner="quoteOrderQty", action="BUY")
         if receipt["status"].lower() == "filled":
             return True, receipt
         return False, None
 
-    def place_sell_order(self, symbol, coins):
+    def place_sell_order(self, asset_symbol, coins):
         """Places sell order for the API"""
-        order_quantity = calc_true_order_quantity(self.api, symbol.upper(), coins)
-        receipt = self.api.post_order(asset=symbol.upper(), quantity=order_quantity, manner="quantity", action="SELL")
+        order_quantity = calc_true_order_quantity(self.api, asset_symbol.upper(), coins)
+        receipt = self.api.post_order(asset=asset_symbol.upper(), quantity=order_quantity,
+                                      manner="quantity", action="SELL")
         if receipt["status"].lower() == "filled":
             return True
         return False
@@ -98,35 +98,65 @@ class TraderBot:
     # ----- VISUAL FEEDBACK ----- #
 
     @add_border
-    def print_new_data(self, df, symbol, strategy):
+    def print_new_data(self, df, asset_symbol, strategy):
         """Print new data result"""
-        message = f"RETRIEVING DATA FOR {symbol.upper()} {strategy.name.upper()} STRATEGY"
+        message = f"RETRIEVING DATA FOR {asset_symbol.upper()} {strategy.name.upper()} STRATEGY"
         data = [f"{index:<15}{round(item, 4)}" for index, item in df.iloc[-1, :].items()]
         return [message] + data
 
     @add_border
-    def print_new_order(self, action, symbol):
+    def print_new_order(self, action, asset_symbol):
         """Print when order is placed"""
         new_balance = self.total_balance - self.active_investments["investment"].sum()
-        first_line = f"{action.upper()} ORDER PLACED FOR {symbol.upper()}"
+        first_line = f"{action.upper()} ORDER PLACED FOR {asset_symbol.upper()}"
         second_line = f"NEW BALANCE: {round(new_balance, 2)}"
         return first_line, second_line
 
-    # ----- LOGGING ORDERS ----- #
+    # ----- DATABASE ----- #
 
-    def log_buy_order(self, symbol, coins, investment, strategy):
+    # ORDERS #
+    def log_buy_order(self, asset_symbol, coins, investment, strategy):
         """Saves active orders to load when restarting."""
-        row = {"asset": [symbol], "coins": [coins], "investment": [investment],
+        row = {"asset": [asset_symbol], "coins": [coins], "investment": [investment],
                "strategy": [strategy.name], "type": [strategy.type]}
         df = pd.DataFrame(row)
         df.to_sql("active_trades", self.engine, if_exists="append", index=False)
 
-    def delete_sold_order(self, symbol, strategy):
+    def delete_sold_order(self, asset_symbol, strategy):
         """Delete buy order from database when asset is sold."""
         metadata = sqlalchemy.MetaData()
         table = sqlalchemy.Table("active_trades", metadata, autoload_with=self.engine)
-        action_to_execute = table.delete().where(table.columns.asset == symbol,
+        action_to_execute = table.delete().where(table.columns.asset == asset_symbol,
                                                  table.columns.strategy == strategy.name)
+        with self.engine.connect() as connection:
+            connection.execute(action_to_execute)
+
+    # TRAILING STOP LOSS #
+    def log_stop_loss(self, stop_loss):
+        """Save a newly activated trailing stop loss"""
+        row = {"strategy_name": [stop_loss.strategy_name], "asset": [stop_loss.asset], "highest": [stop_loss.highest],
+               "trail": [stop_loss.trail]}
+        df = pd.DataFrame(row)
+        df.to_sql("stop_losses", self.engine, if_exists="append", index=False)
+
+    def update_stop_loss(self, stop_loss):
+        """Update any changes to the trailing stop loss in the database"""
+        metadata = sqlalchemy.MetaData()
+        table = sqlalchemy.Table("stop_losses", metadata, autoload_with=self.engine)
+
+        db_update = sqlalchemy.update(table).where(table.columns.strategy_name == stop_loss.strategy_name,
+                                                   table.columns.asset == stop_loss.asset).\
+            values(highest=stop_loss.highest, trail=stop_loss.trail)
+
+        with self.engine.connect() as connection:
+            connection.execute(db_update)
+
+    def delete_stop_loss(self, stop_loss):
+        """Delete trailing stop loss if asset is sold"""
+        metadata = sqlalchemy.MetaData()
+        table = sqlalchemy.Table("stop_losses", metadata, autoload_with=self.engine)
+        action_to_execute = table.delete().where(table.columns.strategy_name == stop_loss.strategy_name,
+                                                 table.columns.asset == stop_loss.asset)
         with self.engine.connect() as connection:
             connection.execute(action_to_execute)
 
@@ -151,7 +181,13 @@ class TraderBot:
                         new_df = create_dataframe(self.api, asset.upper(), strategy.interval[0], MA2)
                         self.print_new_data(new_df, asset, strategy)
                         is_active = self.is_asset_active(strategy, asset)
-                        action = strategy.check_for_signal(new_df, is_active, asset)
+                        action = strategy.check_for_signal(new_df, is_active, asset_symbol=asset)
+
+                        # Update active trailing stop loss
+                        if strategy.trailing_stop_loss:
+                            for stop_loss in strategy.active_stop_losses:
+                                if stop_loss.asset == asset:
+                                    self.update_stop_loss(stop_loss)
 
                         if action == "buy":
 
@@ -173,8 +209,9 @@ class TraderBot:
 
                                 # Set trailing stop loss if strategy uses it
                                 if strategy.trailing_stop_loss:
-                                    stop_loss = TrailingStopLoss(asset, strategy.current_price)
+                                    stop_loss = TrailingStopLoss(strategy.name, asset, strategy.current_price)
                                     strategy.active_stop_losses.append(stop_loss)
+                                    self.log_stop_loss(stop_loss)
 
                         if action == "sell":
 
@@ -197,8 +234,9 @@ class TraderBot:
                                 # Remove trailing stop loss if strategy uses it
                                 if strategy.trailing_stop_loss:
                                     for stop_loss in strategy.active_stop_losses:
-                                        if stop_loss == asset:
+                                        if stop_loss.asset == asset:
                                             strategy.active_stop_losses.remove(stop_loss)
+                                            self.delete_stop_loss(stop_loss)
 
                     just_posted = True
 
