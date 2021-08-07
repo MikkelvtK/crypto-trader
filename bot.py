@@ -13,7 +13,8 @@ class TraderBot:
         self.strategies = strategies
         self.engine = sqlalchemy.create_engine(f"sqlite:///{config.db_path}")
         self.active_investments = self.set_active_investments()
-        self.total_balance = self.set_current_balance()
+        self.current_balance = 0
+        self.total_balance = self.set_balance()
         self.available_to_invest = self.set_available_investments()
         self.set_active_stop_losses()
 
@@ -24,18 +25,27 @@ class TraderBot:
         df = pd.read_sql("active_trades", self.engine)
         return df
 
-    def set_current_balance(self):
+    def set_balance(self):
         """Get float value of total balance (available and currently invested)"""
         for balance in self.api.get_balance()["balances"]:
             if balance["asset"].lower() == "eur":
-                return float(balance["free"]) + self.active_investments["investment"].sum()
+                self.current_balance = float(balance["free"])
+                return self.current_balance + self.active_investments["investment"].sum()
 
     def set_available_investments(self):
         """Divides the available balance for short and long investments"""
+
+        # Check what the current balance division is so available balance isn't too big
+        long_investments = self.active_investments.loc[self.active_investments["type"] == "long", ["investment"]].sum()
+        if (long_investments / self.total_balance) > 0.6:
+            short_available = self.current_balance
+        else:
+            short_available = self.total_balance * 0.4
+
         available_dict = {
             "available long": self.total_balance * 0.6 - self.active_investments.loc[
                 self.active_investments["type"] == "long", ["investment"]].sum(),
-            "available short": self.total_balance * 0.4 - self.active_investments.loc[
+            "available short": short_available - self.active_investments.loc[
                 self.active_investments["type"] == "short", ["investment"]].sum(),
         }
         return available_dict
@@ -70,14 +80,19 @@ class TraderBot:
         if strategy.type == "long":
             active_assets = long["type"].count()
             available_assets = len(strategy.assets) - active_assets
-            return float(round(self.available_to_invest["available long"] / available_assets, 2))
+            investment = float(round(self.available_to_invest["available long"] / available_assets, 2))
+            if investment > 10:
+                return investment
 
         # The check for short investments
         elif strategy.type == "short" and short["type"].count() < 2:
             modifier = 0.5
             if short["type"].count() == 1:
                 modifier = 1
-            return float(round(self.available_to_invest["available short"] * modifier, 2))
+
+            investment = float(round(self.available_to_invest["available short"] * modifier, 2))
+            if investment > 10:
+                return investment
 
         return False
 
@@ -216,6 +231,7 @@ class TraderBot:
                                 bought_coins = float(order_receipt["executedQty"]) * 0.999
                                 self.log_buy_order(asset, bought_coins, investment, strategy)
                                 self.active_investments = self.set_active_investments()
+                                self.total_balance = self.set_balance()
                                 self.available_to_invest = self.set_available_investments()
                                 self.print_new_order(action, asset)
 
@@ -239,7 +255,7 @@ class TraderBot:
                             if asset_sold:
                                 self.delete_sold_order(asset, strategy)
                                 self.active_investments = self.set_active_investments()
-                                self.total_balance = self.set_current_balance()
+                                self.total_balance = self.set_balance()
                                 self.available_to_invest = self.set_available_investments()
                                 self.print_new_order(action, asset)
 

@@ -77,7 +77,10 @@ class BollingerBands(Strategy):
                     stop_loss.trail = stop_loss.highest * 0.95
 
                 # Determine if price is above upper Bollinger band
-                if self.current_price > df["Upper"].iloc[-1] or self.current_price < stop_loss.trail and active:
+                if (
+                        (self.current_price > df["Upper"].iloc[-1] and df["RSI"] > 60)
+                        or self.current_price < stop_loss.trail) \
+                        and active:
                     return "sell"
 
 
