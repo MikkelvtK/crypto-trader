@@ -37,7 +37,9 @@ class TraderBot:
 
         # Check what the current balance division is so available balance isn't too big
         long_investments = self.active_investments.loc[self.active_investments["type"] == "long", ["investment"]].sum()
-        if (long_investments / self.total_balance) > 0.6:
+        long_investments_ratio = float(long_investments) / self.total_balance
+
+        if long_investments_ratio > 0.6:
             short_available = self.current_balance
         else:
             short_available = self.total_balance * 0.4
