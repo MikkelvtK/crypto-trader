@@ -3,6 +3,7 @@ import sys
 import os
 import config
 import time
+import pandas as pd
 
 
 def connection_authenticator(func):
@@ -52,11 +53,15 @@ def add_border(func):
             except IndexError:
                 text = ""
 
-            left_border = "<-------------------"
+            left_border = "<-----------------------"
             right_border = ""
 
-            while len(left_border + text + right_border) < 80:
-                right_border += "-"
+            if isinstance(text, pd.Series):
+                print(text)
+            else:
+                while len(left_border + text + right_border) < 80:
+                    right_border += "-"
 
-            print(left_border + text + right_border + ">")
+                print(left_border + text + right_border + ">")
+
     return wrapper

@@ -2,7 +2,9 @@ import sqlalchemy
 from decorators import *
 from functions import *
 from constants import *
+from database import *
 from strategies import TrailingStopLoss
+from sqlalchemy.orm import sessionmaker
 
 
 class TraderBot:
@@ -12,6 +14,7 @@ class TraderBot:
         self.api = api
         self.strategies = strategies
         self.engine = sqlalchemy.create_engine(f"sqlite:///{config.db_path}")
+        self.session = sessionmaker(self.engine)
         self.active_investments = self.set_active_investments()
         self.current_balance = 0
         self.total_balance = self.set_balance()
@@ -130,8 +133,8 @@ class TraderBot:
     def print_new_data(self, df, asset_symbol, strategy):
         """Print new data result"""
         message = f"RETRIEVING DATA FOR {asset_symbol.upper()} {strategy.name.upper()} STRATEGY"
-        data = [f"{index:<15}{round(item, 4)}" for index, item in df.iloc[-1, :].items()]
-        return [message] + data
+        data = df.iloc[-1, :]
+        return message, data
 
     @add_border
     def print_new_order(self, action, asset_symbol):
@@ -146,10 +149,17 @@ class TraderBot:
     # ORDERS #
     def log_buy_order(self, asset_symbol, coins, investment, strategy):
         """Saves active orders to load when restarting."""
-        row = {"asset": [asset_symbol], "coins": [coins], "investment": [investment],
-               "strategy": [strategy.name], "type": [strategy.type]}
-        df = pd.DataFrame(row)
-        df.to_sql("active_trades", self.engine, if_exists="append", index=False)
+        with self.session() as new_session:
+            new_buy_order = TradeLog(
+                asset=asset_symbol,
+                coins=coins,
+                investment=investment,
+                strategy=strategy.name,
+                type=strategy.type
+            )
+
+            new_session.add(new_buy_order)
+            new_session.commit()
 
     def delete_sold_order(self, asset_symbol, strategy):
         """Delete buy order from database when asset is sold."""
@@ -163,10 +173,16 @@ class TraderBot:
     # TRAILING STOP LOSS #
     def log_stop_loss(self, stop_loss):
         """Save a newly activated trailing stop loss"""
-        row = {"strategy_name": [stop_loss.strategy_name], "asset": [stop_loss.asset], "highest": [stop_loss.highest],
-               "trail": [stop_loss.trail]}
-        df = pd.DataFrame(row)
-        df.to_sql("stop_losses", self.engine, if_exists="append", index=False)
+        with self.session() as new_session:
+            new_stop_loss = StopLoss(
+                strategy_name=stop_loss.strategy_name,
+                asset=stop_loss.asset,
+                highest=stop_loss.highest,
+                trail=stop_loss.trail
+            )
+
+            new_session.add(new_stop_loss)
+            new_session.commit()
 
     def update_stop_loss(self, stop_loss):
         """Update any changes to the trailing stop loss in the database"""
