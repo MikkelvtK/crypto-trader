@@ -43,7 +43,7 @@ class TraderBot:
         long_investments_ratio = float(long_investments) / self.total_balance
 
         if long_investments_ratio > 0.6:
-            short_available = self.current_balance
+            short_available = self.total_balance - float(long_investments)
         else:
             short_available = self.total_balance * 0.4
 
