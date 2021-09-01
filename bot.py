@@ -22,6 +22,11 @@ class TraderBot:
         self.set_active_stop_losses()
 
     # ----- UPDATE ATTRIBUTES ----- #
+    def update_attributes(self):
+        """Update active_investments, total_balance and available_to_invest attributes of bot"""
+        self.active_investments = self.set_active_investments()
+        self.total_balance = self.set_balance()
+        self.available_to_invest = self.set_available_investments()
 
     def set_active_investments(self):
         """Sets which assets are currently active for the strategy"""
@@ -63,11 +68,31 @@ class TraderBot:
             if strategy.trailing_stop_loss:
                 df_strategy = df.loc[df["strategy_name"] == strategy.name]
                 if not df_strategy.empty:
-                    for index, row in df_strategy.itterrows():
+                    for index, row in df_strategy.iterrows():
                         stop_loss = TrailingStopLoss(row["strategy_name"], row["asset"], row["highest"])
                         strategy.active_stop_losses.append(stop_loss)
 
     # ----- CHECKS FOR CONDITIONS ----- #
+
+    def update_long_investment(self, asset_symbol, strategy):
+        """Checks if there is any balance available to put in long investments"""
+        long = self.active_investments.loc[self.active_investments["type"] == "long"]
+
+        if strategy.type == "long":
+            self.set_balance()
+            current_investment = float(long.loc[long["asset"] == asset_symbol, "investment"])
+            available_to_invest = self.total_balance * 0.6 / len(strategy.assets) - current_investment
+
+            if available_to_invest > 20:
+                asset_bought, order_receipt = self.place_buy_order(asset_symbol, available_to_invest)
+
+                # If asset bought, adjust all bot attributes and print action
+                if asset_bought:
+                    bought_coins = float(order_receipt["executedQty"]) * 0.999
+                    new_coins = float(long.loc[long["asset"] == asset_symbol, "coins"]) + bought_coins
+                    new_investment = round(current_investment + available_to_invest, 2)
+                    self.update_long_trade(asset_symbol, new_coins, new_investment, strategy)
+                    self.update_attributes()
 
     def is_asset_active(self, strategy, asset_symbol):
         """Checks if the asset already has an active investment for the strategy"""
@@ -170,6 +195,17 @@ class TraderBot:
         with self.engine.connect() as connection:
             connection.execute(action_to_execute)
 
+    def update_long_trade(self, asset_symbol, coins, investment, strategy):
+        """Update database with any changes in trade"""
+        metadata = sqlalchemy.MetaData()
+        table = sqlalchemy.Table("active_trades", metadata, autoload_with=self.engine)
+        db_update = sqlalchemy.update(table).where(table.columns.strategy == strategy.name,
+                                                   table.columns.asset == asset_symbol).\
+            values(coins=coins, investment=investment)
+
+        with self.engine.connect() as connection:
+            connection.execute(db_update)
+
     # TRAILING STOP LOSS #
     def log_stop_loss(self, stop_loss):
         """Save a newly activated trailing stop loss"""
@@ -228,6 +264,9 @@ class TraderBot:
                         is_active = self.is_asset_active(strategy, asset)
                         action = strategy.check_for_signal(new_df, is_active, asset_symbol=asset)
 
+                        if is_active and action is None:
+                            self.update_long_investment(asset, strategy)
+
                         # Update active trailing stop loss
                         if strategy.trailing_stop_loss:
                             for stop_loss in strategy.active_stop_losses:
@@ -248,9 +287,7 @@ class TraderBot:
                             if asset_bought:
                                 bought_coins = float(order_receipt["executedQty"]) * 0.999
                                 self.log_buy_order(asset, bought_coins, investment, strategy)
-                                self.active_investments = self.set_active_investments()
-                                self.total_balance = self.set_balance()
-                                self.available_to_invest = self.set_available_investments()
+                                self.update_attributes()
                                 self.print_new_order(action, asset)
 
                                 # Set trailing stop loss if strategy uses it
@@ -272,9 +309,7 @@ class TraderBot:
                             # If asset is sold, adjust all bot attributes and print action
                             if asset_sold:
                                 self.delete_sold_order(asset, strategy)
-                                self.active_investments = self.set_active_investments()
-                                self.total_balance = self.set_balance()
-                                self.available_to_invest = self.set_available_investments()
+                                self.update_attributes()
                                 self.print_new_order(action, asset)
 
                                 # Remove trailing stop loss if strategy uses it

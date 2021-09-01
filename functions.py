@@ -21,8 +21,8 @@ def create_dataframe(api, asset_symbol, interval, limit):
 
     # Calculate Bollinger bands
     df["Std"] = df["Price"].rolling(window=STD).std()
-    df["Upper"] = df[f"SMA_{MA1}"] + 1.5 * df["Std"]
-    df["Lower"] = df[f"SMA_{MA1}"] - 2.5 * df["Std"]
+    df["Upper"] = df[f"SMA_{MA1}"] + 0.5 * df["Std"]
+    df["Lower"] = df[f"SMA_{MA1}"] - 2.0 * df["Std"]
 
     # Calculate RSI with SMA
     df["RSI"] = pta.rsi(df["Price"], length=14)
