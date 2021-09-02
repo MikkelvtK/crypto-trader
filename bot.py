@@ -84,7 +84,7 @@ class TraderBot:
             available_to_invest = self.total_balance * 0.6 / len(strategy.assets) - current_investment
 
             if available_to_invest > 20:
-                asset_bought, order_receipt = self.place_buy_order(asset_symbol, available_to_invest)
+                asset_bought, order_receipt = self.place_buy_order(asset_symbol, round(available_to_invest, 2))
 
                 # If asset bought, adjust all bot attributes and print action
                 if asset_bought:
@@ -93,6 +93,7 @@ class TraderBot:
                     new_investment = round(current_investment + available_to_invest, 2)
                     self.update_long_trade(asset_symbol, new_coins, new_investment, strategy)
                     self.update_attributes()
+                    self.print_new_order("buy", asset_symbol)
 
     def is_asset_active(self, strategy, asset_symbol):
         """Checks if the asset already has an active investment for the strategy"""
