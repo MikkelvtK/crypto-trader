@@ -10,7 +10,7 @@ def main():
     api_trader = TraderAPI()
     crossing_sma = CrossingSMA(MA1, MA2, interval=H4, assets=["veteur", "adaeur"], name="golden cross")
     bottom_rsi = BottomRSI(interval=H1, assets=["veteur", "adaeur", "hoteur"], name="rsi dips")
-    bollinger = BollingerBands(interval=M30, assets=["veteur", "adaeur", "hoteur", "dogeeur", "trxeur"],
+    bollinger = BollingerBands(interval=M30, assets=["veteur", "adaeur", "hoteur", "trxeur"],
                                name="bol bands")
     strategies = (crossing_sma, bottom_rsi, bollinger)
 

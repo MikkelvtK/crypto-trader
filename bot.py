@@ -78,11 +78,13 @@ class TraderBot:
         """Checks if there is any balance available to put in long investments"""
         long = self.active_investments.loc[self.active_investments["type"] == "long"]
 
+        # Determine if there is any room to add to long term positions
         if strategy.type == "long":
             self.set_balance()
             current_investment = float(long.loc[long["asset"] == asset_symbol, "investment"])
             available_to_invest = self.total_balance * 0.6 / len(strategy.assets) - current_investment
 
+            # Place buy order when available balance exceeds threshold
             if available_to_invest > 20:
                 asset_bought, order_receipt = self.place_buy_order(asset_symbol, round(available_to_invest, 2))
 
@@ -324,5 +326,5 @@ class TraderBot:
 
             # Bot can sleep. No new data has to be retrieved for a while
             if just_posted:
-                time.sleep(720)
+                time.sleep(1740)
                 just_posted = False
