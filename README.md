@@ -36,14 +36,20 @@ apiKey = your_api_key
 apiSecret = your_api_secret
 db_path = your_database_path
 ```
+* Create data folder.
 * Run database.py once to create the database and tables.
-* Change the assets you want to trade in main.py if you want.
+* Change the assets you want to trade in main.py if you want (must maintain list datatype):
+```
+assets=["veteur", "adaeur"]
+```
 * If you want to leave out any strategy you can remove them from the tuple in main.py:
 ```
 strategies = (crossing_sma, bottom_rsi, bollinger)
 ```
 
 ### Newest Release:
+v0.2.5:
+* Rebalances long term positions with new deposits or profit made from other trades
 
 v0.2:
 * Overhauls the financial management system.
@@ -56,7 +62,6 @@ v0.1:
 ### Under Development:
 
 * Any bug fixes that may arise during testing
-* Adding functionality so the bot can correctly handle new deposits to the balance
 * Adding a notification system when trade orders have been placed.
 * A weekly summary displaying how the bot has performed.
-
+* A selling strategy if desired
