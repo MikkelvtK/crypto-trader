@@ -29,14 +29,11 @@ def create_dataframe(api, asset_symbol, interval, limit):
     return df
 
 
-def calc_true_order_quantity(trader, asset_symbol, coins):
+def calc_correct_quantity(step_size, coins):
     """Get the step size for crypto currencies used by the api"""
-    for asset in trader.get_exchange_info(asset_symbol)["symbols"]:
-        if asset["symbol"] == asset_symbol:
-            for binance_filter in asset["filters"]:
-                if binance_filter['filterType'] == 'LOT_SIZE':
-                    step_size = binance_filter['stepSize'].find('1') - 2
-                    return math.floor(coins * 10 ** step_size) / float(10 ** step_size)
+    if step_size < 0:
+        return math.floor(coins)
+    return math.floor(coins * 10 ** step_size) / 10 ** step_size
 
 
 def calculate_rsi(df_column, window=14):

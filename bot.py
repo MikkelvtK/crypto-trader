@@ -90,7 +90,7 @@ class TraderBot:
 
                 # If asset bought, adjust all bot attributes and print action
                 if asset_bought:
-                    bought_coins = float(order_receipt["executedQty"]) * 0.999
+                    bought_coins = float(order_receipt["executedQty"]) * 0.9995
                     new_coins = float(long.loc[long["asset"] == asset_symbol, "coins"]) + bought_coins
                     new_investment = round(current_investment + available_to_invest, 2)
                     self.update_long_trade(asset_symbol, new_coins, new_investment, strategy)
@@ -136,6 +136,12 @@ class TraderBot:
             return float(active_trades.loc[active_trades["asset"] == asset_symbol, "coins"])
         return False
 
+    def get_step_size(self, asset_symbol):
+        symbol_info = self.api.get_exchange_info(asset_symbol)["symbols"][0]
+        lot_size_filter = symbol_info["filters"][2]
+        step_size = lot_size_filter["stepSize"].find("1") - 1
+        return step_size
+
     # ----- PLACE ORDERS ----- #
 
     def place_buy_order(self, asset_symbol, investment):
@@ -148,7 +154,8 @@ class TraderBot:
 
     def place_sell_order(self, asset_symbol, coins):
         """Places sell order for the API"""
-        order_quantity = calc_true_order_quantity(self.api, asset_symbol.upper(), coins)
+        asset_step_size = self.get_step_size(asset_symbol.upper())
+        order_quantity = calc_correct_quantity(asset_step_size, coins)
         receipt = self.api.post_order(asset=asset_symbol.upper(), quantity=order_quantity,
                                       manner="quantity", action="SELL")
         if receipt["status"].lower() == "filled":
@@ -288,7 +295,7 @@ class TraderBot:
 
                             # If asset bought, adjust all bot attributes and print action
                             if asset_bought:
-                                bought_coins = float(order_receipt["executedQty"]) * 0.999
+                                bought_coins = float(order_receipt["executedQty"]) * 0.9995
                                 self.log_buy_order(asset, bought_coins, investment, strategy)
                                 self.update_attributes()
                                 self.print_new_order(action, asset)
