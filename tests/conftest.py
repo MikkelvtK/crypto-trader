@@ -3,13 +3,24 @@ from strategies import *
 from bot import TraderBot
 from constants import *
 import pytest
+import config
 
 
 @pytest.fixture
-def test_bot():
+def test_trader():
     trader = TraderAPI()
+    trader.key = config.testApiKey
+    trader.secret = config.testApiSecret
+    trader.header = {"X-MBX-APIKEY": trader.key}
+    trader.endpoint = "https://testnet.binance.vision"
+    return trader
+
+
+@pytest.fixture
+def test_bot(test_trader):
     crossing_sma = CrossingSMA(MA1, MA2, interval=H4, assets=[], name="test")
     bottom_rsi = BottomRSI(interval=H1, assets=[], name="test")
     bollinger = BollingerBands(interval=M30, assets=[], name="test")
     strategies = (crossing_sma, bottom_rsi, bollinger)
-    return TraderBot("test", trader, strategies)
+    bot = TraderBot("test", test_trader, strategies)
+    return TraderBot("test", test_trader, strategies)
