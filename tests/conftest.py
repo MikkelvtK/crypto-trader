@@ -3,16 +3,16 @@ from strategies import *
 from bot import TraderBot
 from constants import *
 import pytest
-import config
+from decorators import *
 
 
 @pytest.fixture
 def test_trader():
     trader = TraderAPI()
-    trader.key = config.testApiKey
-    trader.secret = config.testApiSecret
-    trader.header = {"X-MBX-APIKEY": trader.key}
-    trader.endpoint = "https://testnet.binance.vision"
+    # trader.key = config.testApiKey
+    # trader.secret = config.testApiSecret
+    # trader.header = {"X-MBX-APIKEY": trader.key}
+    # trader.endpoint = "https://testnet.binance.vision"
     return trader
 
 
@@ -22,5 +22,4 @@ def test_bot(test_trader):
     bottom_rsi = BottomRSI(interval=H1, assets=[], name="test")
     bollinger = BollingerBands(interval=M30, assets=[], name="test")
     strategies = (crossing_sma, bottom_rsi, bollinger)
-    bot = TraderBot("test", test_trader, strategies)
-    return TraderBot("test", test_trader, strategies)
+    return TraderBot("test", test_trader, strategies, "usdt")

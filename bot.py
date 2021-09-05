@@ -9,17 +9,30 @@ from sqlalchemy.orm import sessionmaker
 
 class TraderBot:
 
-    def __init__(self, name, api, strategies):
+    def __init__(self, name, api, strategies, fiat_market):
         self.name = name
         self.api = api
         self.strategies = strategies
         self.engine = sqlalchemy.create_engine(f"sqlite:///{config.db_path}")
         self.session = sessionmaker(self.engine)
+        self.fiat_market = fiat_market
         self.active_investments = self.set_active_investments()
         self.current_balance = 0
         self.total_balance = self.set_balance()
         self.available_to_invest = self.set_available_investments()
         self.set_active_stop_losses()
+
+    # ----- DATA HANDLING ----- #
+
+    def retrieve_usable_data(self, asset_symbol, strategy):
+        new_data = self.api.get_history(symbol=asset_symbol, interval=strategy.interval[0], limit=MA2)
+        df = create_dataframe(new_data)
+        self.print_new_data(df, asset_symbol, strategy)
+        return df
+
+    # ----- ANALYSING DATA ----- #
+
+
 
     # ----- UPDATE ATTRIBUTES ----- #
     def update_attributes(self):
@@ -30,13 +43,12 @@ class TraderBot:
 
     def set_active_investments(self):
         """Sets which assets are currently active for the strategy"""
-        df = pd.read_sql("active_trades", self.engine)
-        return df
+        return pd.read_sql("active_trades", self.engine)
 
     def set_balance(self):
         """Get float value of total balance (available and currently invested)"""
         for balance in self.api.get_balance()["balances"]:
-            if balance["asset"].lower() == "eur":
+            if balance["asset"].lower() == self.fiat_market:
                 self.current_balance = float(balance["free"])
                 return self.current_balance + self.active_investments["investment"].sum()
 
@@ -54,9 +66,9 @@ class TraderBot:
 
         available_dict = {
             "available long": self.total_balance * 0.6 - self.active_investments.loc[
-                self.active_investments["type"] == "long", ["investment"]].sum(),
+                self.active_investments["type"] == "long", "investment"].sum(),
             "available short": short_available - self.active_investments.loc[
-                self.active_investments["type"] == "short", ["investment"]].sum(),
+                self.active_investments["type"] == "short", "investment"].sum(),
         }
         return available_dict
 
@@ -141,6 +153,9 @@ class TraderBot:
         lot_size_filter = symbol_info["filters"][2]
         step_size = lot_size_filter["stepSize"].find("1") - 1
         return step_size
+
+    def set_limit_parameters(self):
+        pass
 
     # ----- PLACE ORDERS ----- #
 
@@ -268,9 +283,10 @@ class TraderBot:
 
                     for asset in strategy.assets:
 
-                        # Retrieve, print and analyse new data
-                        new_df = create_dataframe(self.api, asset.upper(), strategy.interval[0], MA2)
-                        self.print_new_data(new_df, asset, strategy)
+                        # Handling data
+                        new_df = self.retrieve_usable_data(asset_symbol=asset, strategy=strategy)
+
+                        # Strategy action
                         is_active = self.is_asset_active(strategy, asset)
                         action = strategy.check_for_signal(new_df, is_active, asset_symbol=asset)
 

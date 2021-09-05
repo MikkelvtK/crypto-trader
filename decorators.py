@@ -4,6 +4,7 @@ import os
 import config
 import time
 import pandas as pd
+import functools
 
 
 def connection_authenticator(func):
@@ -64,4 +65,16 @@ def add_border(func):
 
                 print(left_border + text + right_border + ">")
 
+    return wrapper
+
+
+def timer_decorator(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        tic = time.perf_counter()
+        value = func(*args, **kwargs)
+        toc = time.perf_counter()
+        duration = toc - tic
+        print(f"Elapsed time: {duration:0.4f} seconds.")
+        return value
     return wrapper
