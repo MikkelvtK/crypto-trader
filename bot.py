@@ -17,29 +17,19 @@ class TraderBot:
         self.session = sessionmaker(self.engine)
         self.fiat_market = fiat_market
         self.active_investments = self.set_active_investments()
-        self.current_balance = 0
-        self.total_balance = self.set_balance()
-        self.available_to_invest = self.set_available_investments()
+        self.current_balance = self.set_balance()
+        self.total_budget = self.set_balance()
+        self.available_to_invest = self.calculate_available_budget()
         self.set_active_stop_losses()
 
-    # ----- DATA HANDLING ----- #
-
-    def retrieve_usable_data(self, asset_symbol, strategy):
-        new_data = self.api.get_history(symbol=asset_symbol, interval=strategy.interval[0], limit=MA2)
-        df = create_dataframe(new_data)
-        self.print_new_data(df, asset_symbol, strategy)
-        return df
-
-    # ----- ANALYSING DATA ----- #
-
-
-
     # ----- UPDATE ATTRIBUTES ----- #
+
     def update_attributes(self):
-        """Update active_investments, total_balance and available_to_invest attributes of bot"""
+        """Update active_investments, total_budget and available_to_invest attributes of bot"""
         self.active_investments = self.set_active_investments()
-        self.total_balance = self.set_balance()
-        self.available_to_invest = self.set_available_investments()
+        self.current_balance = self.set_balance()
+        self.total_budget = self.calculate_budget()
+        self.available_to_invest = self.calculate_available_budget()
 
     def set_active_investments(self):
         """Sets which assets are currently active for the strategy"""
@@ -49,28 +39,30 @@ class TraderBot:
         """Get float value of total balance (available and currently invested)"""
         for balance in self.api.get_balance()["balances"]:
             if balance["asset"].lower() == self.fiat_market:
-                self.current_balance = float(balance["free"])
-                return self.current_balance + self.active_investments["investment"].sum()
+                return float(balance["free"])
 
-    def set_available_investments(self):
-        """Divides the available balance for short and long investments"""
+    def calculate_budget(self):
+        return self.current_balance + self.active_investments["investment"].sum()
 
-        # Check what the current balance division is so available balance isn't too big
-        long_investments = self.active_investments.loc[self.active_investments["type"] == "long", "investment"].sum()
-        long_investments_ratio = float(long_investments) / self.total_balance
+    def calculate_available_budget(self):
+        """Calculates available budget for investment for different types of trading."""
 
-        if long_investments_ratio > 0.6:
-            short_available = self.total_balance - float(long_investments)
-        else:
-            short_available = self.total_balance * 0.4
+        # Determine what part of the budget is currently invested
+        active_hodl = self.active_investments.loc[self.active_investments["type"] == "long", "investment"].sum()
+        active_day_trading = self.active_investments.loc[self.active_investments["type"] == "short", "investment"].sum()
+        ratio = active_hodl / self.total_budget
 
-        available_dict = {
-            "available long": self.total_balance * 0.6 - self.active_investments.loc[
-                self.active_investments["type"] == "long", "investment"].sum(),
-            "available short": short_available - self.active_investments.loc[
-                self.active_investments["type"] == "short", "investment"].sum(),
+        # Calculate what part of the budget is still available to invest
+        available_budget_dict = {
+            "available hodl budget": self.total_budget * 0.6 - active_hodl,
+            "available day trading budget": self.total_budget * 0.4 - active_day_trading,
         }
-        return available_dict
+
+        # Adjust budget for day trading if not enough is available
+        if ratio > 0.6:
+            available_budget_dict["available day trading budget"] = self.current_balance
+
+        return available_budget_dict
 
     def set_active_stop_losses(self):
         """Read active stop losses when starting the bot"""
@@ -84,6 +76,23 @@ class TraderBot:
                         stop_loss = TrailingStopLoss(row["strategy_name"], row["asset"], row["highest"])
                         strategy.active_stop_losses.append(stop_loss)
 
+    # ----- DATA HANDLING ----- #
+
+    def retrieve_usable_data(self, asset_symbol, strategy):
+        new_data = self.api.get_history(symbol=asset_symbol, interval=strategy.interval[0], limit=MA2)
+        df = create_dataframe(new_data)
+        self.print_new_data(df, asset_symbol, strategy)
+        return df
+
+    # ----- ANALYSING DATA ----- #
+
+    def is_asset_active(self, strategy, asset_symbol):
+        """Checks if the asset already has an active investment for the strategy"""
+        active_trades = self.active_investments.loc[self.active_investments["strategy"] == strategy.name]
+        if asset_symbol in active_trades["asset"].values:
+            return True
+        return False
+
     # ----- CHECKS FOR CONDITIONS ----- #
 
     def update_long_investment(self, asset_symbol, strategy):
@@ -94,7 +103,7 @@ class TraderBot:
         if strategy.type == "long":
             self.set_balance()
             current_investment = float(long.loc[long["asset"] == asset_symbol, "investment"])
-            available_to_invest = self.total_balance * 0.6 / len(strategy.assets) - current_investment
+            available_to_invest = self.total_budget * 0.6 / len(strategy.assets) - current_investment
 
             # Place buy order when available balance exceeds threshold
             if available_to_invest > 20:
@@ -108,13 +117,6 @@ class TraderBot:
                     self.update_long_trade(asset_symbol, new_coins, new_investment, strategy)
                     self.update_attributes()
                     self.print_new_order("buy", asset_symbol)
-
-    def is_asset_active(self, strategy, asset_symbol):
-        """Checks if the asset already has an active investment for the strategy"""
-        active_trades = self.active_investments.loc[self.active_investments["strategy"] == strategy.name]
-        if asset_symbol in active_trades["asset"].values:
-            return True
-        return False
 
     def check_available_balance(self, strategy):
         """Checks if there is any available currency in current balance to invest"""
@@ -189,7 +191,7 @@ class TraderBot:
     @add_border
     def print_new_order(self, action, asset_symbol):
         """Print when order is placed"""
-        new_balance = self.total_balance - self.active_investments["investment"].sum()
+        new_balance = self.total_budget - self.active_investments["investment"].sum()
         first_line = f"{action.upper()} ORDER PLACED FOR {asset_symbol.upper()}"
         second_line = f"NEW BALANCE: {round(new_balance, 2)}"
         return first_line, second_line

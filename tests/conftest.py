@@ -2,6 +2,7 @@ from trader import TraderAPI
 from strategies import *
 from bot import TraderBot
 from constants import *
+from sqlalchemy.ext.declarative import declarative_base
 import pytest
 from decorators import *
 
@@ -23,3 +24,23 @@ def test_bot(test_trader):
     bollinger = BollingerBands(interval=M30, assets=[], name="test")
     strategies = (crossing_sma, bottom_rsi, bollinger)
     return TraderBot("test", test_trader, strategies, "usdt")
+
+
+@pytest.fixture
+def test_trade_log():
+    return declarative_base()
+
+
+@pytest.fixture
+def ma1():
+    return MA1
+
+
+@pytest.fixture
+def std():
+    return STD
+
+
+@pytest.fixture
+def ma2():
+    return MA2
