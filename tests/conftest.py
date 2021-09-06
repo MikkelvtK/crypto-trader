@@ -2,7 +2,9 @@ from trader import TraderAPI
 from strategies import *
 from bot import TraderBot
 from constants import *
+from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
 import pytest
 from decorators import *
 
@@ -19,9 +21,9 @@ def test_trader():
 
 @pytest.fixture
 def test_bot(test_trader):
-    crossing_sma = CrossingSMA(MA1, MA2, interval=H4, assets=[], name="test")
-    bottom_rsi = BottomRSI(interval=H1, assets=[], name="test")
-    bollinger = BollingerBands(interval=M30, assets=[], name="test")
+    crossing_sma = CrossingSMA(MA1, MA2, interval=H4, assets=[], name="Golden Cross")
+    bottom_rsi = BottomRSI(interval=H1, assets=[], name="RSI Dips")
+    bollinger = BollingerBands(interval=M30, assets=[], name="Bol Bands")
     strategies = (crossing_sma, bottom_rsi, bollinger)
     return TraderBot("test", test_trader, strategies, "usdt")
 
@@ -32,6 +34,13 @@ def bot_budget(test_bot):
     test_bot.current_balance = 175
     data = {"asset": ["btcusdt", "btcusdt"], "type": ["long", "short"], "investment": [650, 175]}
     test_bot.active_investments = pd.DataFrame(data)
+    return test_bot
+
+
+@pytest.fixture
+def bot_stop_loss(test_bot):
+    test_bot.engine = create_engine(f"sqlite:///tests/data/trades.db")
+    test_bot.session = sessionmaker(test_bot.engine)
     return test_bot
 
 

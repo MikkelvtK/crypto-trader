@@ -20,7 +20,7 @@ class TraderBot:
         self.current_balance = self.set_balance()
         self.total_budget = self.set_balance()
         self.available_to_invest = self.calculate_available_budget()
-        self.set_active_stop_losses()
+        self.active_stop_losses = {}
 
     # ----- UPDATE ATTRIBUTES ----- #
 
@@ -71,13 +71,10 @@ class TraderBot:
         """Read active stop losses when starting the bot"""
         df = pd.read_sql("stop_losses", self.engine)
 
-        for strategy in self.strategies:
-            if strategy.trailing_stop_loss:
-                df_strategy = df.loc[df["strategy_name"] == strategy.name]
-                if not df_strategy.empty:
-                    for index, row in df_strategy.iterrows():
-                        stop_loss = TrailingStopLoss(row["strategy_name"], row["asset"], row["highest"])
-                        strategy[row["asset"]] = stop_loss
+        if not df.empty:
+            for index, row in df.iterrows():
+                stop_loss = TrailingStopLoss(row["strategy_name"], row["asset"], row["highest"])
+                self.active_stop_losses[stop_loss.strategy_name] = {stop_loss.asset: stop_loss}
 
     # ----- DATA HANDLING ----- #
 

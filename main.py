@@ -20,3 +20,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+# TODO 1: Change when stop loss is created and updated
