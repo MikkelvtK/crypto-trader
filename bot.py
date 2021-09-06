@@ -62,6 +62,9 @@ class TraderBot:
         if ratio > 0.6:
             available_budget_dict["available day trading budget"] = self.current_balance
 
+        if available_budget_dict["available hodl budget"] < 0:
+            available_budget_dict["available hodl budget"] = 0
+
         return available_budget_dict
 
     def set_active_stop_losses(self):
@@ -74,7 +77,7 @@ class TraderBot:
                 if not df_strategy.empty:
                     for index, row in df_strategy.iterrows():
                         stop_loss = TrailingStopLoss(row["strategy_name"], row["asset"], row["highest"])
-                        strategy.active_stop_losses.append(stop_loss)
+                        strategy[row["asset"]] = stop_loss
 
     # ----- DATA HANDLING ----- #
 

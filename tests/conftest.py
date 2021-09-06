@@ -10,10 +10,10 @@ from decorators import *
 @pytest.fixture
 def test_trader():
     trader = TraderAPI()
-    # trader.key = config.testApiKey
-    # trader.secret = config.testApiSecret
-    # trader.header = {"X-MBX-APIKEY": trader.key}
-    # trader.endpoint = "https://testnet.binance.vision"
+    trader.key = config.testApiKey
+    trader.secret = config.testApiSecret
+    trader.header = {"X-MBX-APIKEY": trader.key}
+    trader.endpoint = "https://testnet.binance.vision"
     return trader
 
 
@@ -27,20 +27,14 @@ def test_bot(test_trader):
 
 
 @pytest.fixture
+def bot_budget(test_bot):
+    test_bot.total_budget = 1000
+    test_bot.current_balance = 175
+    data = {"asset": ["btcusdt", "btcusdt"], "type": ["long", "short"], "investment": [650, 175]}
+    test_bot.active_investments = pd.DataFrame(data)
+    return test_bot
+
+
+@pytest.fixture
 def test_trade_log():
     return declarative_base()
-
-
-@pytest.fixture
-def ma1():
-    return MA1
-
-
-@pytest.fixture
-def std():
-    return STD
-
-
-@pytest.fixture
-def ma2():
-    return MA2

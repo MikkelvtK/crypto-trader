@@ -32,7 +32,7 @@ class BottomRSI(Strategy):
     def __init__(self, interval, assets, name):
         super().__init__(interval, assets, name, "short", True)
         self.current_price = 0
-        self.active_stop_losses = []
+        self.active_stop_losses = {}
 
     def check_for_signal(self, df, active, **kwargs):
         """Check if current data gives off a buy or sell signal"""
@@ -59,7 +59,7 @@ class BollingerBands(Strategy):
     def __init__(self, interval, assets, name):
         super().__init__(interval, assets, name, "short", True)
         self.current_price = 0
-        self.active_stop_losses = []
+        self.active_stop_losses = {}
 
     def check_for_signal(self, df, active, **kwargs):
         """Check if current data gives off a buy or sell signal"""
@@ -87,4 +87,12 @@ class TrailingStopLoss:
         self.strategy_name = strategy_name
         self.asset = asset_symbol
         self.highest = current_price
-        self.trail = self.highest * 0.95
+        self.trail = self.calculate_stop_loss()
+
+    def adjust_stop_loss(self, price):
+        if price > self.highest:
+            self.highest = price
+            self.trail = self.calculate_stop_loss()
+
+    def calculate_stop_loss(self):
+        return self.highest * 0.95
