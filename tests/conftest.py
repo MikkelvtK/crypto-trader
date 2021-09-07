@@ -3,7 +3,6 @@ from strategies import *
 from bot import TraderBot
 from constants import *
 from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import pytest
 from decorators import *
@@ -45,5 +44,19 @@ def bot_stop_loss(test_bot):
 
 
 @pytest.fixture
-def test_trade_log():
-    return declarative_base()
+def dataset1(test_bot):
+    data = test_bot.retrieve_usable_data("ETHUSDT", test_bot.strategies[0])
+    data[f"SMA_{MA1}"] = data[f"SMA_{MA1}"].replace([data[f"SMA_{MA1}"].iloc[-1]], 2000)
+    data[f"SMA_{MA2}"] = data[f"SMA_{MA2}"].replace([data[f"SMA_{MA2}"].iloc[-1]], 1500)
+    return test_bot, data
+
+
+@pytest.fixture
+def dataset2(test_bot):
+    bol_strategy = test_bot.strategies[2]
+    asset = "ETHUSDT"
+    data = test_bot.retrieve_usable_data(asset, bol_strategy)
+    stop_loss = TrailingStopLoss(bol_strategy.name, asset, 1500)
+    test_bot.active_stop_losses[stop_loss.strategy_name] = {stop_loss.asset: stop_loss}
+    test_bot.active_investments = pd.DataFrame({"asset": [asset], "strategy": [bol_strategy.name]})
+    return test_bot, data

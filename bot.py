@@ -86,12 +86,21 @@ class TraderBot:
 
     # ----- ANALYSING DATA ----- #
 
-    def is_asset_active(self, strategy, asset_symbol):
-        """Checks if the asset already has an active investment for the strategy"""
+    def analyse_new_data(self, df, asset_symbol, strategy):
         active_trades = self.active_investments.loc[self.active_investments["strategy"] == strategy.name]
         if asset_symbol in active_trades["asset"].values:
-            return True
-        return False
+            active = True
+        else:
+            active = False
+
+        kwargs = {"dataframe": df, "active": active}
+
+        if strategy.trailing_stop_loss and active:
+            stop_loss = self.active_stop_losses[strategy.name][asset_symbol]
+            stop_loss.adjust_stop_loss(df["Price"].iloc[-1])
+            kwargs["stop_loss"] = stop_loss
+
+        return strategy.check_for_signal(**kwargs)
 
     # ----- CHECKS FOR CONDITIONS ----- #
 
@@ -289,11 +298,7 @@ class TraderBot:
                         new_df = self.retrieve_usable_data(asset_symbol=asset, strategy=strategy)
 
                         # Strategy action
-                        is_active = self.is_asset_active(strategy, asset)
-                        action = strategy.check_for_signal(new_df, is_active, asset_symbol=asset)
-
-                        if is_active and action is None:
-                            self.update_long_investment(asset, strategy)
+                        action = self.analyse_new_data(df=new_df, asset_symbol=asset, strategy=strategy)
 
                         # Update active trailing stop loss
                         if strategy.trailing_stop_loss:
