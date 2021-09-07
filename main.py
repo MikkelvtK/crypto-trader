@@ -2,6 +2,7 @@ from trader import TraderAPI
 from strategies import *
 from bot import TraderBot
 from constants import *
+from settings import *
 
 
 def main():

@@ -9,11 +9,4 @@ H1 = ("1h", 3600)
 MA1 = 50
 MA2 = 200
 STD = 20
-MA_BOL = 40
-
-# Settings for portfolio
-FIAT_MARKET = "eur"
-HODL_ASSETS = ("veteur", "adaeur")
-DAY_TRADING_ASSETS = ("veteur", "adaeur", "hoteur", "trxeur", "dogeeur")
-HODL_RATIO = 0.6
-DAY_TRADING_RATIO = 0.4
+MA_BOL = 30

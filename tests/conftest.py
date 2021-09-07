@@ -31,7 +31,8 @@ def test_bot(test_trader):
 def bot_budget(test_bot):
     test_bot.total_budget = 1000
     test_bot.current_balance = 175
-    data = {"asset": ["btcusdt", "btcusdt"], "type": ["long", "short"], "investment": [650, 175]}
+    data = {"asset": ["btcusdt", "btcusdt"], "type": ["long", "short"], "investment": [650, 175],
+            "coins": [1, 0.5], "strategy": ["Golden Cross", "RSI Dips"]}
     test_bot.active_investments = pd.DataFrame(data)
     return test_bot
 
@@ -56,7 +57,7 @@ def dataset2(test_bot):
     bol_strategy = test_bot.strategies[2]
     asset = "ETHUSDT"
     data = test_bot.retrieve_usable_data(asset, bol_strategy)
-    stop_loss = TrailingStopLoss(bol_strategy.name, asset, 1500)
+    stop_loss = TrailingStopLoss(bol_strategy.name, asset, 300)
     test_bot.active_stop_losses[stop_loss.strategy_name] = {stop_loss.asset: stop_loss}
     test_bot.active_investments = pd.DataFrame({"asset": [asset], "strategy": [bol_strategy.name]})
     return test_bot, data

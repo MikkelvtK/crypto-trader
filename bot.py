@@ -1,4 +1,5 @@
 import sqlalchemy
+import math
 from decorators import *
 from functions import *
 from constants import *
@@ -103,6 +104,56 @@ class TraderBot:
 
         return strategy.check_for_signal(**kwargs)
 
+    # ----- SETUP FOR ORDERS ----- #
+
+    def prepare_order(self, asset_symbol, strategy, action):
+        if action == "buy":
+            return self.determine_investment_amount(strategy)
+
+        if action == "sell":
+            return self.retrieve_coins(asset_symbol, strategy)
+
+    def determine_investment_amount(self, strategy):
+        """Checks if there is any available currency in current balance to invest"""
+        if self.current_balance < 10:
+            return None
+
+        long = self.active_investments.loc[self.active_investments["type"] == "long"]
+        short = self.active_investments.loc[self.active_investments["type"] == "short"]
+
+        # The check for long investments
+        if strategy.type == "long":
+            active_assets = long["type"].count()
+            available_assets = len(strategy.assets) - active_assets
+            investment = self.available_to_invest["available hodl budget"] / available_assets
+            rounded_investment = calc_correct_quantity(3, investment)
+            if rounded_investment > 10:
+                return rounded_investment
+
+        # The check for short investments
+        elif strategy.type == "short" and short["type"].count() < 2:
+            modifier = 0.5
+            if short["type"].count() == 1:
+                modifier = 1
+
+            investment = self.available_to_invest["available day trading budget"] * modifier
+            rounded_investment = calc_correct_quantity(3, investment)
+            if rounded_investment > 10:
+                return rounded_investment
+
+    def retrieve_coins(self, asset_symbol, strategy):
+        """Checks if placing a sell order is warranted"""
+        active_trades = self.active_investments.loc[self.active_investments["strategy"] == strategy.name]
+        if asset_symbol in active_trades["asset"].values:
+            coins = float(active_trades.loc[active_trades["asset"] == asset_symbol, "coins"])
+            asset_step_size = self.get_step_size(asset_symbol.upper())
+            return calc_correct_quantity(asset_step_size, coins)
+        return None
+
+    # ----- PLACE ORDER ----- #
+
+
+
     # ----- CHECKS FOR CONDITIONS ----- #
 
     def update_long_investment(self, asset_symbol, strategy):
@@ -128,38 +179,6 @@ class TraderBot:
                     self.update_attributes()
                     self.print_new_order("buy", asset_symbol)
 
-    def check_available_balance(self, strategy):
-        """Checks if there is any available currency in current balance to invest"""
-        long = self.active_investments.loc[self.active_investments["type"] == "long"]
-        short = self.active_investments.loc[self.active_investments["type"] == "short"]
-
-        # The check for long investments
-        if strategy.type == "long":
-            active_assets = long["type"].count()
-            available_assets = len(strategy.assets) - active_assets
-            investment = float(round(self.available_to_invest["available long"] / available_assets, 2))
-            if investment > 10:
-                return investment
-
-        # The check for short investments
-        elif strategy.type == "short" and short["type"].count() < 2:
-            modifier = 0.5
-            if short["type"].count() == 1:
-                modifier = 1
-
-            investment = float(round(self.available_to_invest["available short"] * modifier, 2))
-            if investment > 10:
-                return investment
-
-        return False
-
-    def check_sell_order(self, asset_symbol, strategy):
-        """Checks if placing a sell order is warranted"""
-        active_trades = self.active_investments.loc[self.active_investments["strategy"] == strategy.name]
-        if asset_symbol in active_trades["asset"].values:
-            return float(active_trades.loc[active_trades["asset"] == asset_symbol, "coins"])
-        return False
-
     def get_step_size(self, asset_symbol):
         symbol_info = self.api.get_exchange_info(asset_symbol)["symbols"][0]
         lot_size_filter = symbol_info["filters"][2]
@@ -171,6 +190,15 @@ class TraderBot:
 
     # ----- PLACE ORDERS ----- #
 
+    def place_order(self, asset_symbol, order_quantity, action):
+        if action == "buy":
+            manner = "quoteOrderQty"
+        else:
+            manner = "quantity"
+
+        receipt = self.api.post_order(asset=asset_symbol.upper(), quantity=order_quantity,
+                                      manner=manner, action=action.upper())
+
     def place_buy_order(self, asset_symbol, investment):
         """Places buy order for the API"""
         receipt = self.api.post_order(asset=asset_symbol.upper(), quantity=investment,
@@ -181,8 +209,6 @@ class TraderBot:
 
     def place_sell_order(self, asset_symbol, coins):
         """Places sell order for the API"""
-        asset_step_size = self.get_step_size(asset_symbol.upper())
-        order_quantity = calc_correct_quantity(asset_step_size, coins)
         receipt = self.api.post_order(asset=asset_symbol.upper(), quantity=order_quantity,
                                       manner="quantity", action="SELL")
         if receipt["status"].lower() == "filled":
@@ -301,10 +327,16 @@ class TraderBot:
                         # Strategy action
                         action = self.analyse_new_data(df=new_df, asset_symbol=asset, strategy=strategy)
 
+                        # Order amount
+                        quantity = self.prepare_order(asset_symbol=asset, strategy=strategy, action=action)
+
+                        if quantity is None:
+                            continue
+
                         if action == "buy":
 
                             # Sets the amount that will be invested
-                            investment = self.check_available_balance(strategy)
+                            investment = self.determine_investment_amount(strategy)
 
                             if investment is False:
                                 continue
@@ -313,7 +345,7 @@ class TraderBot:
 
                             # If asset bought, adjust all bot attributes and print action
                             if asset_bought:
-                                bought_coins = float(order_receipt["executedQty"]) * 0.9995
+                                bought_coins = float(order_receipt["executedQty"]) * 0.999
                                 self.log_buy_order(asset, bought_coins, investment, strategy)
                                 self.update_attributes()
                                 self.print_new_order(action, asset)
@@ -327,7 +359,7 @@ class TraderBot:
                         if action == "sell":
 
                             # Retrieve the amount of coins to sell
-                            coins_for_sale = self.check_sell_order(asset, strategy)
+                            coins_for_sale = self.retrieve_coins(asset, strategy)
 
                             if coins_for_sale is False:
                                 continue
