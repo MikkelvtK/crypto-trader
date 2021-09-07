@@ -98,6 +98,7 @@ class TraderBot:
         if strategy.trailing_stop_loss and active:
             stop_loss = self.active_stop_losses[strategy.name][asset_symbol]
             stop_loss.adjust_stop_loss(df["Price"].iloc[-1])
+            self.update_stop_loss(stop_loss)
             kwargs["stop_loss"] = stop_loss
 
         return strategy.check_for_signal(**kwargs)
@@ -299,12 +300,6 @@ class TraderBot:
 
                         # Strategy action
                         action = self.analyse_new_data(df=new_df, asset_symbol=asset, strategy=strategy)
-
-                        # Update active trailing stop loss
-                        if strategy.trailing_stop_loss:
-                            for stop_loss in strategy.active_stop_losses:
-                                if stop_loss.asset == asset:
-                                    self.update_stop_loss(stop_loss)
 
                         if action == "buy":
 
