@@ -21,8 +21,9 @@ def create_dataframe(api, asset_symbol, interval, limit):
 
     # Calculate Bollinger bands
     df["Std"] = df["Price"].rolling(window=STD).std()
-    df["Upper"] = df[f"SMA_{MA1}"] + 0.5 * df["Std"]
-    df["Lower"] = df[f"SMA_{MA1}"] - 2.0 * df["Std"]
+    df[f"SMA_{MA_STD}"] = df["Price"].rolling(window=MA_STD).mean()
+    df["Upper"] = df[f"SMA_{MA_STD}"] + 0.5 * df["Std"]
+    df["Lower"] = df[f"SMA_{MA_STD}"] - 2.0 * df["Std"]
 
     # Calculate RSI with SMA
     df["RSI"] = pta.rsi(df["Price"], length=14)
@@ -35,7 +36,7 @@ def calc_true_order_quantity(trader, asset_symbol, coins):
         if asset["symbol"] == asset_symbol:
             for binance_filter in asset["filters"]:
                 if binance_filter['filterType'] == 'LOT_SIZE':
-                    step_size = binance_filter['stepSize'].find('1') - 2
+                    step_size = binance_filter['stepSize'].find('1') - 1
                     return math.floor(coins * 10 ** step_size) / float(10 ** step_size)
 
 
