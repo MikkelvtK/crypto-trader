@@ -82,6 +82,7 @@ class TrailingStopLoss:
         self.trail = self.calculate_stop_loss()
 
     def adjust_stop_loss(self, price):
+        """Adjust current highest point of the trailing stop loss if needed."""
         if price > self.highest:
             self.highest = price
             self.trail = self.calculate_stop_loss()
