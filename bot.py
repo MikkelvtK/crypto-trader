@@ -92,9 +92,9 @@ class TraderBot:
 
     def retrieve_usable_data(self, asset_symbol, strategy):
         """Get new data from binance API and manipulate to usable data."""
-        new_data = self.api.get_history(symbol=asset_symbol, interval=strategy.interval[0], limit=MA2)
+        new_data = self.api.get_history(symbol=asset_symbol.upper(), interval=strategy.interval[0], limit=MA2)
         df = create_dataframe(new_data)
-        self.print_new_data(df, asset_symbol, strategy)
+        self.print_new_data(df, asset_symbol.upper(), strategy)
         return df
 
     # ----- ANALYSING DATA ----- #
@@ -163,7 +163,7 @@ class TraderBot:
         active_trades = self.active_investments.loc[self.active_investments["strategy"] == strategy.name]
         if asset_symbol in active_trades["asset"].values:
             coins = float(active_trades.loc[active_trades["asset"] == asset_symbol, "coins"])
-            asset_step_size = self.get_step_size(asset_symbol.upper())
+            asset_step_size = self.get_step_size(asset_symbol)
             return calc_correct_quantity(asset_step_size, coins)
         return None
 
@@ -175,7 +175,7 @@ class TraderBot:
 
     def get_step_size(self, asset_symbol):
         """Retrieve how many decimal points are allowed by the API for the currency."""
-        symbol_info = self.api.get_exchange_info(asset_symbol)["symbols"][0]
+        symbol_info = self.api.get_exchange_info(asset_symbol.upper())["symbols"][0]
         lot_size_filter = symbol_info["filters"][2]
         step_size = lot_size_filter["stepSize"].find("1") - 1
         return step_size
