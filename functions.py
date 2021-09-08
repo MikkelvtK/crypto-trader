@@ -4,11 +4,11 @@ import math
 from constants import *
 
 
-def create_dataframe(api, asset_symbol, interval, limit):
+def create_dataframe(data):
     """Cleans data for the bot to use"""
 
     # Create and clean initial DataFrame
-    df = pd.DataFrame(api.get_history(symbol=asset_symbol, interval=interval, limit=limit))
+    df = pd.DataFrame(data)
     df = df.drop(columns=df.iloc[:, 2:].columns)
     df.columns = ["Open Time", "Price"]
     df = df.set_index("Open Time")
@@ -21,23 +21,20 @@ def create_dataframe(api, asset_symbol, interval, limit):
 
     # Calculate Bollinger bands
     df["Std"] = df["Price"].rolling(window=STD).std()
-    df[f"SMA_{MA_STD}"] = df["Price"].rolling(window=MA_STD).mean()
-    df["Upper"] = df[f"SMA_{MA_STD}"] + 0.5 * df["Std"]
-    df["Lower"] = df[f"SMA_{MA_STD}"] - 2.0 * df["Std"]
+    df["MA_BOL"] = df["Price"].rolling(window=MA_BOL).mean()
+    df["Upper"] = df["MA_BOL"] + 0.5 * df["Std"]
+    df["Lower"] = df["MA_BOL"] - 2.0 * df["Std"]
 
     # Calculate RSI with SMA
     df["RSI"] = pta.rsi(df["Price"], length=14)
     return df
 
 
-def calc_true_order_quantity(trader, asset_symbol, coins):
+def calc_correct_quantity(step_size, coins):
     """Get the step size for crypto currencies used by the api"""
-    for asset in trader.get_exchange_info(asset_symbol)["symbols"]:
-        if asset["symbol"] == asset_symbol:
-            for binance_filter in asset["filters"]:
-                if binance_filter['filterType'] == 'LOT_SIZE':
-                    step_size = binance_filter['stepSize'].find('1') - 1
-                    return math.floor(coins * 10 ** step_size) / float(10 ** step_size)
+    if step_size < 0:
+        return math.floor(coins)
+    return math.floor(coins * 10 ** step_size) / 10 ** step_size
 
 
 def calculate_rsi(df_column, window=14):

@@ -9,103 +9,132 @@ from sqlalchemy.orm import sessionmaker
 
 class TraderBot:
 
-    def __init__(self, name, api, strategies):
+    def __init__(self, name, api, strategies, fiat_market):
+
+        # Setup up all parameters given
         self.name = name
         self.api = api
         self.strategies = strategies
+        self.fiat_market = fiat_market
+
+        # Connect to Database
         self.engine = sqlalchemy.create_engine(f"sqlite:///{config.db_path}")
         self.session = sessionmaker(self.engine)
+
+        # Initialising all data from databases and Binance account
         self.active_investments = self.set_active_investments()
-        self.current_balance = 0
-        self.total_balance = self.set_balance()
-        self.available_to_invest = self.set_available_investments()
+        self.current_balance = self.set_balance()
+        self.total_budget = self.set_balance()
+        self.available_to_invest = self.calculate_available_budget()
+        self.active_stop_losses = {}
         self.set_active_stop_losses()
 
     # ----- UPDATE ATTRIBUTES ----- #
+
     def update_attributes(self):
-        """Update active_investments, total_balance and available_to_invest attributes of bot"""
+        """Update active_investments, current_balance, total_budget and available_to_invest attributes of bot"""
         self.active_investments = self.set_active_investments()
-        self.total_balance = self.set_balance()
-        self.available_to_invest = self.set_available_investments()
+        self.current_balance = self.set_balance()
+        self.total_budget = self.calculate_budget()
+        self.available_to_invest = self.calculate_available_budget()
 
     def set_active_investments(self):
         """Sets which assets are currently active for the strategy"""
-        df = pd.read_sql("active_trades", self.engine)
-        return df
+        return pd.read_sql("active_trades", self.engine)
 
     def set_balance(self):
         """Get float value of total balance (available and currently invested)"""
         for balance in self.api.get_balance()["balances"]:
-            if balance["asset"].lower() == "eur":
-                self.current_balance = float(balance["free"])
-                return self.current_balance + self.active_investments["investment"].sum()
+            if balance["asset"].lower() == self.fiat_market:
+                return float(balance["free"])
 
-    def set_available_investments(self):
-        """Divides the available balance for short and long investments"""
+    def calculate_budget(self):
+        """Add current balance to the amount that is currently invested to get a total budget."""
+        return self.current_balance + self.active_investments["investment"].sum()
 
-        # Check what the current balance division is so available balance isn't too big
-        long_investments = self.active_investments.loc[self.active_investments["type"] == "long", ["investment"]].sum()
-        long_investments_ratio = float(long_investments) / self.total_balance
+    def calculate_available_budget(self):
+        """Calculates available budget for investment for different types of trading."""
 
-        if long_investments_ratio > 0.6:
-            short_available = self.total_balance - float(long_investments)
-        else:
-            short_available = self.total_balance * 0.4
+        # Determine what part of the budget is currently invested
+        active_hodl = self.active_investments.loc[self.active_investments["type"] == "long", "investment"].sum()
+        active_day_trading = self.active_investments.loc[self.active_investments["type"] == "short", "investment"].sum()
+        ratio = active_hodl / self.total_budget
 
-        available_dict = {
-            "available long": self.total_balance * 0.6 - self.active_investments.loc[
-                self.active_investments["type"] == "long", ["investment"]].sum(),
-            "available short": short_available - self.active_investments.loc[
-                self.active_investments["type"] == "short", ["investment"]].sum(),
+        # Calculate what part of the budget is still available to invest
+        available_budget_dict = {
+            "available hodl budget": self.total_budget * 0.6 - active_hodl,
+            "available day trading budget": self.total_budget * 0.4 - active_day_trading,
         }
-        return available_dict
+
+        # Adjust budget for day trading if not enough is available
+        if ratio > 0.6:
+            available_budget_dict["available day trading budget"] = self.current_balance
+
+        if available_budget_dict["available hodl budget"] < 0:
+            available_budget_dict["available hodl budget"] = 0
+
+        return available_budget_dict
 
     def set_active_stop_losses(self):
         """Read active stop losses when starting the bot"""
-        df = pd.read_sql("stop_losses", self.engine)
 
         for strategy in self.strategies:
-            if strategy.trailing_stop_loss:
-                df_strategy = df.loc[df["strategy_name"] == strategy.name]
-                if not df_strategy.empty:
-                    for index, row in df_strategy.iterrows():
-                        stop_loss = TrailingStopLoss(row["strategy_name"], row["asset"], row["highest"])
-                        strategy.active_stop_losses.append(stop_loss)
+            self.active_stop_losses[strategy.name] = {}
 
-    # ----- CHECKS FOR CONDITIONS ----- #
+        df = pd.read_sql("stop_losses", self.engine)
 
-    def update_long_investment(self, asset_symbol, strategy):
-        """Checks if there is any balance available to put in long investments"""
-        long = self.active_investments.loc[self.active_investments["type"] == "long"]
+        if not df.empty:
+            for index, row in df.iterrows():
+                stop_loss = TrailingStopLoss(row["strategy_name"], row["asset"], row["highest"])
+                self.active_stop_losses[stop_loss.strategy_name][stop_loss.asset] = stop_loss
 
-        # Determine if there is any room to add to long term positions
-        if strategy.type == "long":
-            self.set_balance()
-            current_investment = float(long.loc[long["asset"] == asset_symbol, "investment"])
-            available_to_invest = self.total_balance * 0.6 / len(strategy.assets) - current_investment
+    # ----- DATA HANDLING ----- #
 
-            # Place buy order when available balance exceeds threshold
-            if available_to_invest > 20:
-                asset_bought, order_receipt = self.place_buy_order(asset_symbol, round(available_to_invest, 2))
+    def retrieve_usable_data(self, asset_symbol, strategy):
+        """Get new data from binance API and manipulate to usable data."""
+        new_data = self.api.get_history(symbol=asset_symbol, interval=strategy.interval[0], limit=MA2)
+        df = create_dataframe(new_data)
+        self.print_new_data(df, asset_symbol, strategy)
+        return df
 
-                # If asset bought, adjust all bot attributes and print action
-                if asset_bought:
-                    bought_coins = float(order_receipt["executedQty"]) * 0.999
-                    new_coins = float(long.loc[long["asset"] == asset_symbol, "coins"]) + bought_coins
-                    new_investment = round(current_investment + available_to_invest, 2)
-                    self.update_long_trade(asset_symbol, new_coins, new_investment, strategy)
-                    self.update_attributes()
-                    self.print_new_order("buy", asset_symbol)
+    # ----- ANALYSING DATA ----- #
 
-    def is_asset_active(self, strategy, asset_symbol):
-        """Checks if the asset already has an active investment for the strategy"""
+    def analyse_new_data(self, df, asset_symbol, strategy):
+        """Analyse the data to decide if any action needs to be taken"""
+
+        # Determine if an investment is currently active for the crypto coin
         active_trades = self.active_investments.loc[self.active_investments["strategy"] == strategy.name]
         if asset_symbol in active_trades["asset"].values:
-            return True
-        return False
+            active = True
+        else:
+            active = False
 
-    def check_available_balance(self, strategy):
+        kwargs = {"dataframe": df, "active": active}
+
+        # Adjust and update the trailing stop loss if asset is active
+        if strategy.trailing_stop_loss and active:
+            stop_loss = self.active_stop_losses[strategy.name][asset_symbol]
+            stop_loss.adjust_stop_loss(df["Price"].iloc[-1])
+            self.update_stop_loss(stop_loss)
+            kwargs["stop_loss"] = stop_loss
+
+        return strategy.check_for_signal(**kwargs)
+
+    # ----- SETUP FOR ORDERS ----- #
+
+    def prepare_order(self, asset_symbol, strategy, action):
+        """Prepare variables to place order"""
+        if action == "buy":
+            return self.determine_investment_amount(strategy)
+
+        if action == "sell":
+            return self.retrieve_coins(asset_symbol, strategy)
+
+    def determine_investment_amount(self, strategy):
         """Checks if there is any available currency in current balance to invest"""
+        if self.current_balance < 10:
+            return None
+
         long = self.active_investments.loc[self.active_investments["type"] == "long"]
         short = self.active_investments.loc[self.active_investments["type"] == "short"]
 
@@ -113,9 +142,10 @@ class TraderBot:
         if strategy.type == "long":
             active_assets = long["type"].count()
             available_assets = len(strategy.assets) - active_assets
-            investment = float(round(self.available_to_invest["available long"] / available_assets, 2))
-            if investment > 10:
-                return investment
+            investment = self.available_to_invest["available hodl budget"] / available_assets
+            rounded_investment = calc_correct_quantity(3, investment)
+            if rounded_investment > 10:
+                return rounded_investment
 
         # The check for short investments
         elif strategy.type == "short" and short["type"].count() < 2:
@@ -123,56 +153,52 @@ class TraderBot:
             if short["type"].count() == 1:
                 modifier = 1
 
-            investment = float(round(self.available_to_invest["available short"] * modifier, 2))
-            if investment > 10:
-                return investment
+            investment = self.available_to_invest["available day trading budget"] * modifier
+            rounded_investment = calc_correct_quantity(3, investment)
+            if rounded_investment > 10:
+                return rounded_investment
 
-        return False
-
-    def check_sell_order(self, asset_symbol, strategy):
+    def retrieve_coins(self, asset_symbol, strategy):
         """Checks if placing a sell order is warranted"""
         active_trades = self.active_investments.loc[self.active_investments["strategy"] == strategy.name]
         if asset_symbol in active_trades["asset"].values:
-            return float(active_trades.loc[active_trades["asset"] == asset_symbol, "coins"])
-        return False
+            coins = float(active_trades.loc[active_trades["asset"] == asset_symbol, "coins"])
+            asset_step_size = self.get_step_size(asset_symbol.upper())
+            return calc_correct_quantity(asset_step_size, coins)
+        return None
+
+    # ----- CHECKS FOR CONDITIONS ----- #
+
+    def update_long_investment(self, asset_symbol, strategy):
+        """Checks if there is any balance available to put in long investments"""
+        pass
+
+    def get_step_size(self, asset_symbol):
+        """Retrieve how many decimal points are allowed by the API for the currency."""
+        symbol_info = self.api.get_exchange_info(asset_symbol)["symbols"][0]
+        lot_size_filter = symbol_info["filters"][2]
+        step_size = lot_size_filter["stepSize"].find("1") - 1
+        return step_size
+
+    def set_limit_parameters(self):
+        pass
 
     # ----- PLACE ORDERS ----- #
 
-    def place_buy_order(self, asset_symbol, investment):
-        """Places buy order for the API"""
-        receipt = self.api.post_order(asset=asset_symbol.upper(), quantity=investment,
-                                      manner="quoteOrderQty", action="BUY")
-        if receipt["status"].lower() == "filled":
-            return True, receipt
-        return False, None
+    def place_order(self, asset_symbol, order_quantity, action):
+        """Place the order based on the action."""
 
-    def place_sell_order(self, asset_symbol, coins):
-        """Places sell order for the API"""
-        order_quantity = calc_true_order_quantity(self.api, asset_symbol.upper(), coins)
+        if action == "buy":
+            manner = "quoteOrderQty"
+        else:
+            manner = "quantity"
+
         receipt = self.api.post_order(asset=asset_symbol.upper(), quantity=order_quantity,
-                                      manner="quantity", action="SELL")
+                                      manner=manner, action=action.upper())
         if receipt["status"].lower() == "filled":
-            return True
-        return False
+            return receipt
 
-    # ----- VISUAL FEEDBACK ----- #
-
-    @add_border
-    def print_new_data(self, df, asset_symbol, strategy):
-        """Print new data result"""
-        message = f"RETRIEVING DATA FOR {asset_symbol.upper()} {strategy.name.upper()} STRATEGY"
-        data = df.iloc[-1, :]
-        return message, data
-
-    @add_border
-    def print_new_order(self, action, asset_symbol):
-        """Print when order is placed"""
-        new_balance = self.total_balance - self.active_investments["investment"].sum()
-        first_line = f"{action.upper()} ORDER PLACED FOR {asset_symbol.upper()}"
-        second_line = f"NEW BALANCE: {round(new_balance, 2)}"
-        return first_line, second_line
-
-    # ----- DATABASE ----- #
+    # ----- LOGGING ORDERS ----- #
 
     # ORDERS #
     def log_buy_order(self, asset_symbol, coins, investment, strategy):
@@ -244,6 +270,23 @@ class TraderBot:
         with self.engine.connect() as connection:
             connection.execute(action_to_execute)
 
+    # ----- VISUAL FEEDBACK ----- #
+
+    @add_border
+    def print_new_data(self, df, asset_symbol, strategy):
+        """Print new data result"""
+        message = f"RETRIEVING DATA FOR {asset_symbol.upper()} {strategy.name.upper()} STRATEGY"
+        data = df.iloc[-1, :]
+        return message, data
+
+    @add_border
+    def print_new_order(self, action, asset_symbol):
+        """Print when order is placed"""
+        new_balance = self.total_budget - self.active_investments["investment"].sum()
+        first_line = f"{action.upper()} ORDER PLACED FOR {asset_symbol.upper()}"
+        second_line = f"NEW BALANCE: {round(new_balance, 2)}"
+        return first_line, second_line
+
     # ----- ON/OFF BUTTON ----- #
 
     def activate(self):
@@ -261,66 +304,36 @@ class TraderBot:
 
                     for asset in strategy.assets:
 
-                        # Retrieve, print and analyse new data
-                        new_df = create_dataframe(self.api, asset.upper(), strategy.interval[0], MA2)
-                        self.print_new_data(new_df, asset, strategy)
-                        is_active = self.is_asset_active(strategy, asset)
-                        action = strategy.check_for_signal(new_df, is_active, asset_symbol=asset)
+                        # Get data from binance and determine if action needs to be taken
+                        new_df = self.retrieve_usable_data(asset_symbol=asset, strategy=strategy)
+                        action = self.analyse_new_data(df=new_df, asset_symbol=asset, strategy=strategy)
 
-                        if is_active and action is None:
-                            self.update_long_investment(asset, strategy)
+                        if action is None:
+                            continue
 
-                        # Update active trailing stop loss
-                        if strategy.trailing_stop_loss:
-                            for stop_loss in strategy.active_stop_losses:
-                                if stop_loss.asset == asset:
-                                    self.update_stop_loss(stop_loss)
+                        # Prepare and place order
+                        quantity = self.prepare_order(asset_symbol=asset, strategy=strategy, action=action)
+                        order_receipt = self.place_order(asset_symbol=asset, order_quantity=quantity, action=action)
 
-                        if action == "buy":
+                        if order_receipt:
 
-                            # Sets the amount that will be invested
-                            investment = self.check_available_balance(strategy)
-
-                            if investment is False:
-                                continue
-
-                            asset_bought, order_receipt = self.place_buy_order(asset, investment)
-
-                            # If asset bought, adjust all bot attributes and print action
-                            if asset_bought:
-                                bought_coins = float(order_receipt["executedQty"]) * 0.999
-                                self.log_buy_order(asset, bought_coins, investment, strategy)
-                                self.update_attributes()
-                                self.print_new_order(action, asset)
-
-                                # Set trailing stop loss if strategy uses it
+                            # If order is placed, update and log all attributes
+                            new_coins = float(order_receipt["executedQty"]) * 0.999
+                            if action == "buy":
+                                self.log_buy_order(asset_symbol=asset, coins=new_coins,
+                                                   investment=quantity, strategy=strategy)
                                 if strategy.trailing_stop_loss:
                                     stop_loss = TrailingStopLoss(strategy.name, asset, strategy.current_price)
-                                    strategy.active_stop_losses.append(stop_loss)
+                                    self.active_stop_losses[strategy.name][asset] = stop_loss
                                     self.log_stop_loss(stop_loss)
-
-                        if action == "sell":
-
-                            # Retrieve the amount of coins to sell
-                            coins_for_sale = self.check_sell_order(asset, strategy)
-
-                            if coins_for_sale is False:
-                                continue
-
-                            asset_sold = self.place_sell_order(asset, coins_for_sale)
-
-                            # If asset is sold, adjust all bot attributes and print action
-                            if asset_sold:
-                                self.delete_sold_order(asset, strategy)
-                                self.update_attributes()
-                                self.print_new_order(action, asset)
-
-                                # Remove trailing stop loss if strategy uses it
+                            else:
+                                self.delete_sold_order(asset_symbol=asset, strategy=strategy)
                                 if strategy.trailing_stop_loss:
-                                    for stop_loss in strategy.active_stop_losses:
-                                        if stop_loss.asset == asset:
-                                            strategy.active_stop_losses.remove(stop_loss)
-                                            self.delete_stop_loss(stop_loss)
+                                    self.delete_stop_loss(stop_loss=self.active_stop_losses[strategy.name][asset])
+                                    del self.active_stop_losses[strategy.name][asset]
+
+                            self.update_attributes()
+                            self.print_new_order(action, asset)
 
                     just_posted = True
 
