@@ -109,7 +109,7 @@ class TraderBot:
         else:
             active = False
 
-        kwargs = {"dataframe": df, "active": active}
+        kwargs = {"dataframe": df, "active": active, "stop_loss": None}
 
         # Adjust and update the trailing stop loss if asset is active
         if strategy.trailing_stop_loss and active:

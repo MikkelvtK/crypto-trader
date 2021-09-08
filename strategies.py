@@ -47,7 +47,7 @@ class BottomRSI(Strategy):
             return "buy"
 
         # When RSI >= 40 give off sell signal
-        if (df["RSI"].iloc[-1] >= 40 or self.current_price < stop_loss.trail) and active:
+        elif (df["RSI"].iloc[-1] >= 40 or self.current_price < stop_loss.trail) and active:
             return "sell"
 
 
