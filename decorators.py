@@ -1,10 +1,10 @@
 import requests
 import sys
 import os
-import config
 import time
-import pandas as pd
 import functools
+import config
+import smtplib
 
 
 def connection_authenticator(func):
@@ -38,6 +38,14 @@ def check_response(func):
         if response.ok:
             return response.json()
         else:
+            with smtplib.SMTP("smtp.gmail.com") as connection:
+                connection.starttls()
+                connection.login(config.my_email, config.email_password)
+                connection.sendmail(
+                    from_addr=config.my_email,
+                    to_addrs=config.to_email,
+                    msg=config.crash_mail_body
+                )
             sys.exit(f"Something is wrong. Please fix the following issue:\n {response.text}")
     return wrapper
 

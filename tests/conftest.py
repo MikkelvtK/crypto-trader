@@ -5,6 +5,7 @@ from constants import *
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import pytest
+import pandas as pd
 from decorators import *
 
 

@@ -1,8 +1,9 @@
+import config
 from trader import TraderAPI
 from strategies import *
 from bot import TraderBot
 from constants import *
-from settings import *
+from config import *
 
 
 def main():
@@ -15,7 +16,7 @@ def main():
     strategies = (crossing_sma, bottom_rsi, bollinger)
 
     # Create bot object and activate it
-    bot = TraderBot("john", api_trader, strategies, FIAT_MARKET)
+    bot = TraderBot(config.BOT_NAME, api_trader, strategies, FIAT_MARKET)
     bot.activate()
 
 
