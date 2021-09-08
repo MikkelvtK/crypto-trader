@@ -22,6 +22,7 @@ class TraderBot:
         self.total_budget = self.set_balance()
         self.available_to_invest = self.calculate_available_budget()
         self.active_stop_losses = {}
+        self.set_active_stop_losses()
 
     # ----- UPDATE ATTRIBUTES ----- #
 
@@ -70,12 +71,15 @@ class TraderBot:
 
     def set_active_stop_losses(self):
         """Read active stop losses when starting the bot"""
+        for strategy in self.strategies:
+            self.active_stop_losses[strategy.name] = {}
+
         df = pd.read_sql("stop_losses", self.engine)
 
         if not df.empty:
             for index, row in df.iterrows():
                 stop_loss = TrailingStopLoss(row["strategy_name"], row["asset"], row["highest"])
-                self.active_stop_losses[stop_loss.strategy_name] = {stop_loss.asset: stop_loss}
+                self.active_stop_losses[stop_loss.strategy_name][stop_loss.asset] = stop_loss
 
     # ----- DATA HANDLING ----- #
 
@@ -150,10 +154,6 @@ class TraderBot:
             return calc_correct_quantity(asset_step_size, coins)
         return None
 
-    # ----- PLACE ORDER ----- #
-
-
-
     # ----- CHECKS FOR CONDITIONS ----- #
 
     def update_long_investment(self, asset_symbol, strategy):
@@ -198,41 +198,10 @@ class TraderBot:
 
         receipt = self.api.post_order(asset=asset_symbol.upper(), quantity=order_quantity,
                                       manner=manner, action=action.upper())
-
-    def place_buy_order(self, asset_symbol, investment):
-        """Places buy order for the API"""
-        receipt = self.api.post_order(asset=asset_symbol.upper(), quantity=investment,
-                                      manner="quoteOrderQty", action="BUY")
         if receipt["status"].lower() == "filled":
-            return True, receipt
-        return False, None
+            return receipt
 
-    def place_sell_order(self, asset_symbol, coins):
-        """Places sell order for the API"""
-        receipt = self.api.post_order(asset=asset_symbol.upper(), quantity=order_quantity,
-                                      manner="quantity", action="SELL")
-        if receipt["status"].lower() == "filled":
-            return True
-        return False
-
-    # ----- VISUAL FEEDBACK ----- #
-
-    @add_border
-    def print_new_data(self, df, asset_symbol, strategy):
-        """Print new data result"""
-        message = f"RETRIEVING DATA FOR {asset_symbol.upper()} {strategy.name.upper()} STRATEGY"
-        data = df.iloc[-1, :]
-        return message, data
-
-    @add_border
-    def print_new_order(self, action, asset_symbol):
-        """Print when order is placed"""
-        new_balance = self.total_budget - self.active_investments["investment"].sum()
-        first_line = f"{action.upper()} ORDER PLACED FOR {asset_symbol.upper()}"
-        second_line = f"NEW BALANCE: {round(new_balance, 2)}"
-        return first_line, second_line
-
-    # ----- DATABASE ----- #
+    # ----- LOGGING ORDERS ----- #
 
     # ORDERS #
     def log_buy_order(self, asset_symbol, coins, investment, strategy):
@@ -304,6 +273,23 @@ class TraderBot:
         with self.engine.connect() as connection:
             connection.execute(action_to_execute)
 
+    # ----- VISUAL FEEDBACK ----- #
+
+    @add_border
+    def print_new_data(self, df, asset_symbol, strategy):
+        """Print new data result"""
+        message = f"RETRIEVING DATA FOR {asset_symbol.upper()} {strategy.name.upper()} STRATEGY"
+        data = df.iloc[-1, :]
+        return message, data
+
+    @add_border
+    def print_new_order(self, action, asset_symbol):
+        """Print when order is placed"""
+        new_balance = self.total_budget - self.active_investments["investment"].sum()
+        first_line = f"{action.upper()} ORDER PLACED FOR {asset_symbol.upper()}"
+        second_line = f"NEW BALANCE: {round(new_balance, 2)}"
+        return first_line, second_line
+
     # ----- ON/OFF BUTTON ----- #
 
     def activate(self):
@@ -321,63 +307,34 @@ class TraderBot:
 
                     for asset in strategy.assets:
 
-                        # Handling data
                         new_df = self.retrieve_usable_data(asset_symbol=asset, strategy=strategy)
-
-                        # Strategy action
                         action = self.analyse_new_data(df=new_df, asset_symbol=asset, strategy=strategy)
 
-                        # Order amount
-                        quantity = self.prepare_order(asset_symbol=asset, strategy=strategy, action=action)
-
-                        if quantity is None:
+                        if action is None:
                             continue
 
-                        if action == "buy":
+                        quantity = self.prepare_order(asset_symbol=asset, strategy=strategy, action=action)
+                        order_receipt = self.place_order(asset_symbol=asset, order_quantity=quantity, action=action)
 
-                            # Sets the amount that will be invested
-                            investment = self.determine_investment_amount(strategy)
-
-                            if investment is False:
-                                continue
-
-                            asset_bought, order_receipt = self.place_buy_order(asset, investment)
+                        if order_receipt:
 
                             # If asset bought, adjust all bot attributes and print action
-                            if asset_bought:
-                                bought_coins = float(order_receipt["executedQty"]) * 0.999
-                                self.log_buy_order(asset, bought_coins, investment, strategy)
-                                self.update_attributes()
-                                self.print_new_order(action, asset)
-
-                                # Set trailing stop loss if strategy uses it
+                            new_coins = float(order_receipt["executedQty"]) * 0.999
+                            if action == "buy":
+                                self.log_buy_order(asset_symbol=asset, coins=new_coins,
+                                                   investment=quantity, strategy=strategy)
                                 if strategy.trailing_stop_loss:
                                     stop_loss = TrailingStopLoss(strategy.name, asset, strategy.current_price)
-                                    strategy.active_stop_losses.append(stop_loss)
+                                    self.active_stop_losses[strategy.name][asset] = stop_loss
                                     self.log_stop_loss(stop_loss)
-
-                        if action == "sell":
-
-                            # Retrieve the amount of coins to sell
-                            coins_for_sale = self.retrieve_coins(asset, strategy)
-
-                            if coins_for_sale is False:
-                                continue
-
-                            asset_sold = self.place_sell_order(asset, coins_for_sale)
-
-                            # If asset is sold, adjust all bot attributes and print action
-                            if asset_sold:
-                                self.delete_sold_order(asset, strategy)
-                                self.update_attributes()
-                                self.print_new_order(action, asset)
-
-                                # Remove trailing stop loss if strategy uses it
+                            else:
+                                self.delete_sold_order(asset_symbol=asset, strategy=strategy)
                                 if strategy.trailing_stop_loss:
-                                    for stop_loss in strategy.active_stop_losses:
-                                        if stop_loss.asset == asset:
-                                            strategy.active_stop_losses.remove(stop_loss)
-                                            self.delete_stop_loss(stop_loss)
+                                    self.delete_stop_loss(stop_loss=self.active_stop_losses[strategy.name][asset])
+                                    del self.active_stop_losses[strategy.name][asset]
+
+                            self.update_attributes()
+                            self.print_new_order(action, asset)
 
                     just_posted = True
 

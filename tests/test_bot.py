@@ -1,3 +1,5 @@
+import pytest
+
 from decorators import *
 
 
@@ -22,7 +24,7 @@ def test_analysing_data(dataset1, dataset2):
     action2 = dataset2[0].analyse_new_data(dataset2[1], "ETHUSDT", dataset2[0].strategies[2])
     assert action1 == "buy"
     assert bot2.active_stop_losses[bot2.strategies[2].name]["ETHUSDT"].trail == dataset2[1]["Price"].iloc[-1] * 0.95
-    assert action2 is None
+    assert action2 == "sell"
 
 
 @timer_decorator
@@ -43,3 +45,21 @@ def test_prepare_order(bot_budget):
     assert investment == 175
     assert sell_quantity == 1
     assert do_nothing is None
+
+
+@timer_decorator
+def test_place_order(test_bot):
+    receipt = test_bot.place_order("BTCUSDT", 25000, "buy")
+    receipt2 = test_bot.place_order("BTCUSDT", 0.1, "sell")
+    assert receipt["status"].lower() == "filled"
+    assert receipt2["status"].lower() == "filled"
+    assert receipt2["side"].lower() == "sell"
+
+
+@timer_decorator
+def test_removing_stop_losses(dataset2):
+    bot = dataset2[0]
+    del bot.active_stop_losses["Bol Bands"]["BTCUSDT"]
+    with pytest.raises(KeyError):
+        print(bot.active_stop_losses["Bol Bands"]["BTCUSDT"])
+    assert isinstance(bot.active_stop_losses["Bol Bands"]["ETHUSDT"], object) is True

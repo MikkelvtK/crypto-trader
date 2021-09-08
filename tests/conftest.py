@@ -58,6 +58,9 @@ def dataset2(test_bot):
     asset = "ETHUSDT"
     data = test_bot.retrieve_usable_data(asset, bol_strategy)
     stop_loss = TrailingStopLoss(bol_strategy.name, asset, 300)
-    test_bot.active_stop_losses[stop_loss.strategy_name] = {stop_loss.asset: stop_loss}
-    test_bot.active_investments = pd.DataFrame({"asset": [asset], "strategy": [bol_strategy.name]})
+    stop_loss2 = TrailingStopLoss(bol_strategy.name, "BTCUSDT", 30000)
+    test_bot.active_stop_losses[stop_loss.strategy_name][stop_loss.asset] = stop_loss
+    test_bot.active_stop_losses[stop_loss2.strategy_name][stop_loss2.asset] = stop_loss2
+    test_bot.active_investments = pd.DataFrame({"asset": [asset, "BTCUSDT"],
+                                                "strategy": [bol_strategy.name, bol_strategy.name]})
     return test_bot, data
