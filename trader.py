@@ -40,7 +40,7 @@ class TraderAPI:
 
         # Create hashed signature
         query_string = f"timestamp={ms_time}"
-        signature = hmac.new(self.secret.encode('utf-8'), query_string.encode('utf-8'), hashlib.sha256).hexdigest()
+        signature = hmac.new(self.secret.encode("utf-8"), query_string.encode("utf-8"), hashlib.sha256).hexdigest()
 
         params = {
             "timestamp": ms_time,
@@ -63,7 +63,7 @@ class TraderAPI:
         # Create hashed signature
         query_string = f"symbol={kwargs['asset']}&side={side}&type={type_}&" \
                        f"{kwargs['manner']}={kwargs['quantity']}&timestamp={ms_time}"
-        signature = hmac.new(self.secret.encode('utf-8'), query_string.encode('utf-8'), hashlib.sha256).hexdigest()
+        signature = hmac.new(self.secret.encode("utf-8"), query_string.encode("utf-8"), hashlib.sha256).hexdigest()
 
         params = {
             "symbol": kwargs["asset"],

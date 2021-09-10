@@ -313,6 +313,10 @@ class TraderBot:
 
                         # Prepare and place order
                         quantity = self.prepare_order(asset_symbol=asset, strategy=strategy, action=action)
+
+                        if quantity is None:
+                            continue
+
                         order_receipt = self.place_order(asset_symbol=asset, order_quantity=quantity, action=action)
 
                         if order_receipt:
