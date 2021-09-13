@@ -23,7 +23,7 @@ def test_analysing_data(dataset1, dataset2):
     action2 = dataset2[0].analyse_new_data(dataset2[1], "ETHUSDT", dataset2[0].strategies[2])
     assert action1 == "buy"
     assert bot2.active_stop_losses[bot2.strategies[2].name]["ETHUSDT"].trail == dataset2[1]["Price"].iloc[-1] * 0.95
-    assert action2 == "sell"
+    assert action2 is None
 
 
 @timer_decorator
@@ -62,3 +62,11 @@ def test_removing_stop_losses(dataset2):
     with pytest.raises(KeyError):
         print(bot.active_stop_losses["Bol Bands"]["BTCUSDT"])
     assert isinstance(bot.active_stop_losses["Bol Bands"]["ETHUSDT"], object) is True
+
+
+@timer_decorator
+def test_place_limit_order(test_bot):
+    new_df = test_bot.retrieve_usable_data("ethusdt", strategy=test_bot.strategies[1])
+    quantity = test_bot.prepare_order("ethusdt", test_bot.strategies[1], "buy")
+    receipt = test_bot.place_limit_order(asset_symbol="ethusdt", df=new_df, order_quantity=quantity, action="buy")
+    assert receipt["filled"] == "FILLED"

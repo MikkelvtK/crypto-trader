@@ -1,11 +1,13 @@
 from trader import TraderAPI
 from candlestick import Candlestick
 import datetime as dt
+from functions import *
 import time
 from config import *
 from sqlalchemy.orm import sessionmaker
 import sqlalchemy
 from database import *
+
 
 
 def log_candlestick(candlestick_to_log):
@@ -40,4 +42,25 @@ def update_candlestick(candlestick_to_update):
 
     with new_engine.connect() as connection:
         connection.execute(db_update)
+
+
+def clear_database():
+    new_engine = sqlalchemy.create_engine("sqlite:///../data/trades.db")
+
+    entries_to_delete = sqlalchemy.delete(CandlestickDatabase).where()
+
+    with new_engine.connect() as connection:
+        connection.execute(entries_to_delete)
+
+
+clear_database()
+api = TraderAPI()
+
+new_data = api.get_history(symbol="VETEUR", interval="5m", limit=M5[1])
+
+
+
+current_time = time.time()
+
+
 

@@ -48,8 +48,10 @@ class BottomRSI(Strategy):
 
         # When RSI >= 40 give off sell signal
         elif active:
-            if df["RSI"].iloc[-1] >= 40 or self.current_price < stop_loss.trail:
+            if df["RSI"].iloc[-1] >= 40:
                 return "sell"
+            elif self.current_price < stop_loss.trail:
+                return "quick sell"
 
 
 class BollingerBands(Strategy):
@@ -71,8 +73,10 @@ class BollingerBands(Strategy):
 
         # Determine if price is above upper Bollinger band
         elif active:
-            if self.current_price > df["Upper"].iloc[-1] or self.current_price < stop_loss.trail:
+            if self.current_price > df["Upper"].iloc[-1]:
                 return "sell"
+            elif self.current_price < stop_loss.trail:
+                return "quick sell"
 
 
 class TrailingStopLoss:
