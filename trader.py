@@ -11,9 +11,11 @@ class TraderAPI:
         self.header = {"X-MBX-APIKEY": self.key}
         self.endpoint = "https://api.binance.com"
 
+    @check_response
+    @connection_authenticator
     def get_latest_price(self, asset):
         symbol_price_ticker = "/api/v3/ticker/price"
-        return requests.get(self.endpoint + symbol_price_ticker, params={"symbol": asset}).json()
+        return requests.get(self.endpoint + symbol_price_ticker, params={"symbol": asset})
 
     @check_response
     @connection_authenticator
