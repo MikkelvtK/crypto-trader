@@ -23,7 +23,7 @@ def test_analysing_data(dataset1, dataset2):
     action2 = dataset2[0].analyse_new_data(dataset2[1], "ETHUSDT", dataset2[0].strategies[2])
     assert action1 == "buy"
     assert bot2.active_stop_losses[bot2.strategies[2].name]["ETHUSDT"].trail == dataset2[1]["Price"].iloc[-1] * 0.95
-    assert action2 == "sell"
+    assert action2 is None
 
 
 @timer_decorator
@@ -46,13 +46,11 @@ def test_prepare_order(bot_budget):
     assert do_nothing is None
 
 
-@timer_decorator
-def test_place_order(test_bot):
-    receipt = test_bot.place_order("BTCUSDT", 25000, "buy")
-    receipt2 = test_bot.place_order("BTCUSDT", 0.1, "sell")
-    assert receipt["status"].lower() == "filled"
-    assert receipt2["status"].lower() == "filled"
-    assert receipt2["side"].lower() == "sell"
+# @timer_decorator
+# def test_place_order(test_bot):
+#     receipt = test_bot.place_order("BTCUSDT", 5000, "buy")
+#     r
+#     assert receipt["status"].lower() == "filled"
 
 
 @timer_decorator
@@ -62,3 +60,10 @@ def test_removing_stop_losses(dataset2):
     with pytest.raises(KeyError):
         print(bot.active_stop_losses["Bol Bands"]["BTCUSDT"])
     assert isinstance(bot.active_stop_losses["Bol Bands"]["ETHUSDT"], object) is True
+
+
+@timer_decorator
+def test_place_limit_order(test_bot):
+    receipt = test_bot.place_limit_order(asset_symbol="ethusdt", order_quantity=100, action="buy")
+    print(receipt)
+    assert receipt["status"] == "FILLED"

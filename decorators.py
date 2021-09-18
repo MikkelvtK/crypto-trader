@@ -5,6 +5,7 @@ import time
 import functools
 import config
 import smtplib
+import pandas as pd
 
 
 def connection_authenticator(func):

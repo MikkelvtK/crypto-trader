@@ -92,7 +92,7 @@ class TraderBot:
 
     def retrieve_usable_data(self, asset_symbol, strategy):
         """Get new data from binance API and manipulate to usable data."""
-        new_data = self.api.get_history(symbol=asset_symbol.upper(), interval=strategy.interval[0], limit=MA2)
+        new_data = self.api.get_history(symbol=asset_symbol, interval=strategy.interval[0], limit=MA2)
         df = create_dataframe(new_data)
         self.print_new_data(df, asset_symbol.upper(), strategy)
         return df
@@ -127,7 +127,7 @@ class TraderBot:
         if action == "buy":
             return self.determine_investment_amount(strategy)
 
-        if action == "sell":
+        if action == "sell" or action == "quick sell":
             return self.retrieve_coins(asset_symbol, strategy)
 
     def determine_investment_amount(self, strategy):
@@ -180,8 +180,11 @@ class TraderBot:
         step_size = lot_size_filter["stepSize"].find("1") - 1
         return step_size
 
-    def set_limit_parameters(self):
-        pass
+    def get_tick_size(self, asset_symbol):
+        symbol_info = self.api.get_exchange_info(asset_symbol.upper())["symbols"][0]
+        lot_size_filter = symbol_info["filters"][0]
+        tick_size = lot_size_filter["tickSize"].find("1") - 1
+        return tick_size
 
     # ----- PLACE ORDERS ----- #
 
@@ -193,10 +196,32 @@ class TraderBot:
         else:
             manner = "quantity"
 
-        receipt = self.api.post_order(asset=asset_symbol.upper(), quantity=order_quantity,
-                                      manner=manner, action=action.upper())
+        receipt = self.api.post_order(asset=asset_symbol, amount=order_quantity, quantity_type=manner,
+                                      order_type="market", action=action)
         if receipt["status"].lower() == "filled":
             return receipt
+
+    def place_limit_order(self, asset_symbol, order_quantity, action):
+        """Place limit order"""
+        price = float(self.api.get_latest_price(asset=asset_symbol)["price"])
+        asset_step_size = self.get_step_size(asset_symbol)
+
+        if action == "buy":
+            price *= 1.001
+            order_quantity = calc_correct_quantity(asset_step_size, order_quantity / price)
+        else:
+            price *= 0.999
+
+        new_price = calc_correct_quantity(self.get_tick_size(asset_symbol), price)
+        receipt = self.api.post_order(asset=asset_symbol, action=action, order_type="limit", price=new_price,
+                                      quantity_type="quantity", amount=order_quantity)
+
+        confirmation = self.api.query_order(asset_symbol=asset_symbol, order_id=receipt["orderId"])
+
+        while not confirmation["status"].lower() == "filled":
+            time.sleep(5)
+            confirmation = self.api.query_order(asset_symbol=asset_symbol, order_id=receipt["orderId"])
+        return confirmation
 
     # ----- LOGGING ORDERS ----- #
 
@@ -295,12 +320,12 @@ class TraderBot:
 
         while True:
             current_time = time.time()
+            time.sleep(5)
 
             for strategy in self.strategies:
 
                 # Checks for each strategy if new data can be retrieved
                 if -1 <= (current_time % strategy.interval[1]) <= 1:
-                    time.sleep(15)
 
                     for asset in strategy.assets:
 
@@ -316,8 +341,11 @@ class TraderBot:
 
                         if quantity is None:
                             continue
-
-                        order_receipt = self.place_order(asset_symbol=asset, order_quantity=quantity, action=action)
+                        elif action == "quick sell":
+                            order_receipt = self.place_order(asset_symbol=asset, order_quantity=quantity, action="sell")
+                        else:
+                            order_receipt = self.place_limit_order(asset_symbol=asset,
+                                                                   order_quantity=quantity, action=action)
 
                         if order_receipt:
 
