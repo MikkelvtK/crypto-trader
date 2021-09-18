@@ -196,24 +196,33 @@ class TraderBot:
         else:
             manner = "quantity"
 
-        receipt = self.api.post_order(asset=asset_symbol.upper(), quantity=order_quantity,
-                                      order_type=manner, action=action.upper())
+        receipt = self.api.post_order(asset=asset_symbol, amount=order_quantity, quantity_type=manner,
+                                      order_type="market", action=action)
         if receipt["status"].lower() == "filled":
             return receipt
 
     def place_limit_order(self, asset_symbol, df, order_quantity, action):
-        price = df["Price"].iloc[-1]
-        correct_price = calc_correct_quantity(self.get_tick_size(asset_symbol), price)
+        """Place limit order"""
+        price = float(self.api.get_latest_price(asset=asset_symbol)["price"])
         asset_step_size = self.get_step_size(asset_symbol)
 
         if action == "buy":
-            order_quantity = calc_correct_quantity(asset_step_size, order_quantity / correct_price)
+            order_quantity = calc_correct_quantity(asset_step_size, order_quantity / price)
+            new_price = calc_correct_quantity(self.get_tick_size(asset_symbol), price * 1.001)
+        else:
+            new_price = calc_correct_quantity(self.get_tick_size(asset_symbol), price * 0.999)
 
-        receipt = self.api.post_order(asset=asset_symbol, action=action, order_type="limit", price=correct_price*0.999,
+        receipt = self.api.post_order(asset=asset_symbol, action=action, order_type="limit", price=new_price,
                                       quantity_type="quantity", amount=order_quantity)
 
-        if receipt["status"].lower() == "filled":
-            return receipt
+        time.sleep(5)
+
+        confirmation = self.api.query_order(asset_symbol=asset_symbol, order_id=receipt["orderId"], side=action,
+                                            order_type="limit")
+        print(confirmation)
+
+        if confirmation["status"].lower() == "filled":
+            return confirmation
 
     # ----- LOGGING ORDERS ----- #
 
@@ -312,12 +321,12 @@ class TraderBot:
 
         while True:
             current_time = time.time()
+            time.sleep(5)
 
             for strategy in self.strategies:
 
                 # Checks for each strategy if new data can be retrieved
                 if -1 <= (current_time % strategy.interval[1]) <= 1:
-                    time.sleep(15)
 
                     for asset in strategy.assets:
 

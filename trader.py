@@ -15,7 +15,7 @@ class TraderAPI:
     @connection_authenticator
     def get_latest_price(self, asset):
         symbol_price_ticker = "/api/v3/ticker/price"
-        return requests.get(self.endpoint + symbol_price_ticker, params={"symbol": asset})
+        return requests.get(self.endpoint + symbol_price_ticker, params={"symbol": asset.upper()})
 
     @check_response
     @connection_authenticator
@@ -68,21 +68,24 @@ class TraderAPI:
             "side": side,
             "type": order_type,
             quantity_type: amount,
-            "timeInForce": "GTC",
             "timestamp": ms_time,
         }
 
         # Create hashed signature
-        query_string = f"symbol={asset}&side={side}&type={order_type}&" \
-                       f"{quantity_type}={amount}&timeInForce=GTC&timestamp={ms_time}"
-
         if order_type.lower() == "limit":
             price = kwargs["price"]
-            query_string += f"&price={price}"
             params["price"] = price
+            params["timeInForce"] = "GTC"
+
+            query_string = f"symbol={asset}&side={side}&type={order_type}&" \
+                           f"{quantity_type}={amount}&timestamp={ms_time}&price={price}&timeInForce=GTC"
+        else:
+            query_string = f"symbol={asset}&side={side}&type={order_type}&" \
+                           f"{quantity_type}={amount}&timestamp={ms_time}"
 
         signature = hmac.new(self.secret.encode("utf-8"), query_string.encode("utf-8"), hashlib.sha256).hexdigest()
         params["signature"] = signature
+        print(params)
         return requests.post(self.endpoint + request, params=params, headers=self.header)
 
     @check_response
@@ -91,6 +94,25 @@ class TraderAPI:
         """Get asset information"""
         request = "/api/v3/exchangeInfo"
         return requests.get(self.endpoint + request, params={"symbol": asset})
+
+    @check_response
+    @connection_authenticator
+    def query_order(self, asset_symbol, order_id, side, order_type):
+        request = "/api/v3/order"
+        ms_time = round(time.time() * 1000)
+        symbol = asset_symbol.upper()
+
+        params = {
+            "symbol": symbol,
+            "orderId": order_id,
+            "timestamp": ms_time,
+        }
+
+        query_string = f"symbol={symbol}&orderId={order_id}&timestamp={ms_time}"
+        signature = hmac.new(self.secret.encode("utf-8"), query_string.encode("utf-8"), hashlib.sha256).hexdigest()
+        params["signature"] = signature
+        print(params)
+        return requests.get(self.endpoint + request, params=params, headers=self.header)
 
 
 if __name__ == "__main__":

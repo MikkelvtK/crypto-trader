@@ -46,13 +46,11 @@ def test_prepare_order(bot_budget):
     assert do_nothing is None
 
 
-@timer_decorator
-def test_place_order(test_bot):
-    receipt = test_bot.place_order("BTCUSDT", 25000, "buy")
-    receipt2 = test_bot.place_order("BTCUSDT", 0.1, "sell")
-    assert receipt["status"].lower() == "filled"
-    assert receipt2["status"].lower() == "filled"
-    assert receipt2["side"].lower() == "sell"
+# @timer_decorator
+# def test_place_order(test_bot):
+#     receipt = test_bot.place_order("BTCUSDT", 5000, "buy")
+#     r
+#     assert receipt["status"].lower() == "filled"
 
 
 @timer_decorator
@@ -67,6 +65,6 @@ def test_removing_stop_losses(dataset2):
 @timer_decorator
 def test_place_limit_order(test_bot):
     new_df = test_bot.retrieve_usable_data("ethusdt", strategy=test_bot.strategies[1])
-    quantity = test_bot.prepare_order("ethusdt", test_bot.strategies[1], "buy")
-    receipt = test_bot.place_limit_order(asset_symbol="ethusdt", df=new_df, order_quantity=quantity, action="buy")
-    assert receipt["filled"] == "FILLED"
+
+    receipt = test_bot.place_limit_order(asset_symbol="ethusdt", df=new_df, order_quantity=100, action="buy")
+    assert receipt["status"] == "FILLED"
