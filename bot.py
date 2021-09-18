@@ -201,28 +201,27 @@ class TraderBot:
         if receipt["status"].lower() == "filled":
             return receipt
 
-    def place_limit_order(self, asset_symbol, df, order_quantity, action):
+    def place_limit_order(self, asset_symbol, order_quantity, action):
         """Place limit order"""
         price = float(self.api.get_latest_price(asset=asset_symbol)["price"])
         asset_step_size = self.get_step_size(asset_symbol)
 
         if action == "buy":
             order_quantity = calc_correct_quantity(asset_step_size, order_quantity / price)
-            new_price = calc_correct_quantity(self.get_tick_size(asset_symbol), price * 1.001)
+            price *= 1.001
         else:
-            new_price = calc_correct_quantity(self.get_tick_size(asset_symbol), price * 0.999)
+            price *= 0.999
 
+        new_price = calc_correct_quantity(self.get_tick_size(asset_symbol), price)
         receipt = self.api.post_order(asset=asset_symbol, action=action, order_type="limit", price=new_price,
                                       quantity_type="quantity", amount=order_quantity)
 
-        time.sleep(5)
+        confirmation = self.api.query_order(asset_symbol=asset_symbol, order_id=receipt["orderId"])
 
-        confirmation = self.api.query_order(asset_symbol=asset_symbol, order_id=receipt["orderId"], side=action,
-                                            order_type="limit")
-        print(confirmation)
-
-        if confirmation["status"].lower() == "filled":
-            return confirmation
+        while not confirmation["status"].lower() == "filled":
+            time.sleep(5)
+            confirmation = self.api.query_order(asset_symbol=asset_symbol, order_id=receipt["orderId"])
+        return confirmation
 
     # ----- LOGGING ORDERS ----- #
 
@@ -345,7 +344,7 @@ class TraderBot:
                         elif action == "quick sell":
                             order_receipt = self.place_order(asset_symbol=asset, order_quantity=quantity, action="sell")
                         else:
-                            order_receipt = self.place_limit_order(asset_symbol=asset, df=new_df,
+                            order_receipt = self.place_limit_order(asset_symbol=asset,
                                                                    order_quantity=quantity, action=action)
 
                         if order_receipt:

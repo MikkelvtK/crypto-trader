@@ -85,7 +85,6 @@ class TraderAPI:
 
         signature = hmac.new(self.secret.encode("utf-8"), query_string.encode("utf-8"), hashlib.sha256).hexdigest()
         params["signature"] = signature
-        print(params)
         return requests.post(self.endpoint + request, params=params, headers=self.header)
 
     @check_response
@@ -111,7 +110,6 @@ class TraderAPI:
         query_string = f"symbol={symbol}&orderId={order_id}&timestamp={ms_time}"
         signature = hmac.new(self.secret.encode("utf-8"), query_string.encode("utf-8"), hashlib.sha256).hexdigest()
         params["signature"] = signature
-        print(params)
         return requests.get(self.endpoint + request, params=params, headers=self.header)
 
 
