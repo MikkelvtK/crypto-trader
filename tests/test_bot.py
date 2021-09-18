@@ -64,7 +64,6 @@ def test_removing_stop_losses(dataset2):
 
 @timer_decorator
 def test_place_limit_order(test_bot):
-    new_df = test_bot.retrieve_usable_data("ethusdt", strategy=test_bot.strategies[1])
-
-    receipt = test_bot.place_limit_order(asset_symbol="ethusdt", df=new_df, order_quantity=100, action="buy")
+    receipt = test_bot.place_limit_order(asset_symbol="ethusdt", order_quantity=100, action="buy")
+    print(receipt)
     assert receipt["status"] == "FILLED"

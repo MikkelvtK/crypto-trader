@@ -207,8 +207,8 @@ class TraderBot:
         asset_step_size = self.get_step_size(asset_symbol)
 
         if action == "buy":
-            order_quantity = calc_correct_quantity(asset_step_size, order_quantity / price)
             price *= 1.001
+            order_quantity = calc_correct_quantity(asset_step_size, order_quantity / price)
         else:
             price *= 0.999
 

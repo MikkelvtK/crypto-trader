@@ -96,7 +96,7 @@ class TraderAPI:
 
     @check_response
     @connection_authenticator
-    def query_order(self, asset_symbol, order_id, side, order_type):
+    def query_order(self, asset_symbol, order_id):
         request = "/api/v3/order"
         ms_time = round(time.time() * 1000)
         symbol = asset_symbol.upper()
