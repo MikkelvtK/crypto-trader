@@ -1,7 +1,7 @@
 import config
-from trader import TraderAPI
-from strategies import *
-from bot import TraderBot
+from bot.class_blueprints.trader import TraderAPI
+from bot.class_blueprints.strategies import *
+from trader_bot import TraderBot
 from constants import *
 from config import *
 

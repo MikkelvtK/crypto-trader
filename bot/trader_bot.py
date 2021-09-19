@@ -3,7 +3,7 @@ from decorators import *
 from functions import *
 from constants import *
 from database import *
-from strategies import TrailingStopLoss
+from bot.class_blueprints.strategies import TrailingStopLoss
 from sqlalchemy.orm import sessionmaker
 
 

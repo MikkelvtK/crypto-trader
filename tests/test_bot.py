@@ -1,5 +1,5 @@
 import pytest
-from decorators import *
+from bot.decorators import *
 
 
 @timer_decorator

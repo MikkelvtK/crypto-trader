@@ -1,12 +1,11 @@
-from trader import TraderAPI
-from strategies import *
+from bot.class_blueprints.trader import TraderAPI
+from bot.class_blueprints.strategies import *
 from bot import TraderBot
-from constants import *
+from bot.constants import *
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import pytest
-import pandas as pd
-from decorators import *
+from bot.decorators import *
 
 
 @pytest.fixture
