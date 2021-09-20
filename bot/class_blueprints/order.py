@@ -5,11 +5,11 @@ class Order:
 
     EXCEPTION_MESSAGE = "Order has not been placed yet so no value has been set."
 
-    def __init__(self, symbol, price, investment, side, order_type):
+    def __init__(self, symbol, price, fiat_amount, side, order_type):
         self._id = None
         self.symbol = symbol
         self.price = price
-        self.investment = investment
+        self.fiat_amount = fiat_amount
         self._coins = None
         self.side = side
         self.type = order_type
