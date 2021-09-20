@@ -165,7 +165,6 @@ class TraderBot:
             coins = float(active_trades.loc[active_trades["asset"] == asset_symbol, "coins"])
             asset_step_size = self.get_step_size(asset_symbol)
             return calc_correct_quantity(asset_step_size, coins)
-        return None
 
     # ----- CHECKS FOR CONDITIONS ----- #
 
