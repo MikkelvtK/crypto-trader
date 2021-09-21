@@ -3,7 +3,7 @@ import math
 
 class Order:
 
-    EXCEPTION_MESSAGE = "Order has not been placed yet so no value has been set."
+    __EXCEPTION_MESSAGE = "Order has not been placed yet so no value has been set."
 
     def __init__(self, symbol, price, fiat_amount, side, order_type):
         self._id = None
@@ -19,25 +19,25 @@ class Order:
     @property
     def id(self):
         if self._id is None:
-            raise Exception(self.EXCEPTION_MESSAGE)
+            raise Exception(self.__EXCEPTION_MESSAGE)
         return self._id
 
     @property
     def coins(self):
         if self._id is None:
-            raise Exception(self.EXCEPTION_MESSAGE)
+            raise Exception(self.__EXCEPTION_MESSAGE)
         return self._coins
 
     @property
     def time(self):
         if self._id is None:
-            raise Exception(self.EXCEPTION_MESSAGE)
+            raise Exception(self.__EXCEPTION_MESSAGE)
         return self._time
 
     @property
     def status(self):
         if self._id is None:
-            raise Exception(self.EXCEPTION_MESSAGE)
+            raise Exception(self.__EXCEPTION_MESSAGE)
         return self._status
 
     @status.setter
