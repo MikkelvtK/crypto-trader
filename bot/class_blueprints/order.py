@@ -1,4 +1,8 @@
 import math
+import bot.config as c
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from bot.database import OrderRecord
 
 
 class Order:
@@ -51,4 +55,20 @@ class Order:
         self._status = receipt["status"].lower()
 
     def to_sql(self):
-        pass
+        engine = create_engine(f"sqlite:///{c.db_path}")
+        session = sessionmaker(engine)
+
+        with session() as connection:
+            new_order = OrderRecord(
+                order_id=self._id,
+                symbol=self.symbol,
+                price=self.price,
+                investment=self.investment,
+                coins=self._coins,
+                side=self.side,
+                order_type=self.type,
+                time=self._time,
+                status=self._status
+            )
+            connection.add(new_order)
+            connection.commit()

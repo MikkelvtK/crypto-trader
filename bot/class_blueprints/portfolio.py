@@ -11,7 +11,7 @@ class Portfolio:
         else:
             self._fiat_balance = fiat_balance
         self._hodl_crypto = hodl_crypto
-        self._crypto_balances = {crypto: Crypto(crypto, fiat) for crypto in cryptos}
+        self._crypto_balances = {crypto: Crypto(crypto, fiat).from_sql() for crypto in cryptos}
 
     @property
     def owner(self):

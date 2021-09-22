@@ -25,6 +25,30 @@ class StopLoss(Base):
     trail = Column(Float, nullable=False)
 
 
+class OrderRecord(Base):
+    __tablename__ = "orders"
+    index = Column(Integer, primary_key=True)
+    order_id = Column(Integer, nullable=False)
+    symbol = Column(String(250), nullable=False)
+    price = Column(Float, nullable=False)
+    investment = Column(Float, nullable=False)
+    coins = Column(Float, nullable=False)
+    side = Column(String(250), nullable=False)
+    order_type = Column(String(250), nullable=False)
+    time = Column(Integer, nullable=False)
+    status = Column(String(250), nullable=False)
+
+
+class CryptoBalance(Base):
+    __tablename__ = "crypto_balances"
+    index = Column(Integer, primary_key=True)
+    crypto = Column(String(250), nullable=False)
+    fiat = Column(String(250), nullable=False)
+    investment = Column(Float, nullable=False)
+    balance = Column(Float, nullable=False)
+    value = Column(Float, nullable=False)
+
+
 if __name__ == "__main__":
 
     # Create database and connection

@@ -1,3 +1,9 @@
+import bot.config as c
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from bot.database import CryptoBalance
+
+
 class Crypto:
 
     __NEGATIVE = "Number cannot be negative."
@@ -53,14 +59,31 @@ class Crypto:
     def get_symbol(self):
         return self.__crypto + self.__fiat
 
-    def buy(self):
-        pass
-
-    def sell(self):
+    def update(self):
         pass
 
     def to_sql(self):
-        pass
+        engine = create_engine(f"sqlite:///{c.db_path}")
+        session = sessionmaker(engine)
+
+        with session() as connection:
+            new_update = CryptoBalance(
+                crypto=self.__crypto,
+                fiat=self.__fiat,
+                investment=self._investment,
+                balance=self._balance,
+                value=self._value
+            )
+
+            connection.add(new_update)
+            connection.commit()
 
     def from_sql(self):
-        pass
+        engine = create_engine(f"sqlite:///{c.db_path}")
+        session = sessionmaker(engine)
+
+        with session() as connection:
+            result = connection.query(CryptoBalance).where(CryptoBalance.crypto == self.__crypto)
+            self._investment = result.investment
+            self._balance = result.balance
+            self._value = result.value
