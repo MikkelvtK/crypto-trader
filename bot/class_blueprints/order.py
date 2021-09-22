@@ -5,11 +5,11 @@ class Order:
 
     __EXCEPTION_MESSAGE = "Order has not been placed yet so no value has been set."
 
-    def __init__(self, symbol, price, fiat_amount, side, order_type):
+    def __init__(self, symbol, price, investment, side, order_type):
         self._id = None
         self.symbol = symbol
         self.price = price
-        self.fiat_amount = fiat_amount
+        self.investment = investment
         self._coins = None
         self.side = side
         self.type = order_type
@@ -49,3 +49,6 @@ class Order:
         self._coins = float(receipt["executedQty"])
         self._time = math.floor(receipt["transactTime"] / 1000)
         self._status = receipt["status"].lower()
+
+    def to_sql(self):
+        pass
