@@ -1,4 +1,4 @@
-import bot.config as c
+import bot.config as config
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from bot.database import CryptoBalance
@@ -63,7 +63,7 @@ class Crypto:
         pass
 
     def to_sql(self):
-        engine = create_engine(f"sqlite:///{c.db_path}")
+        engine = create_engine(f"sqlite:///{config.db_path}")
         session = sessionmaker(engine)
 
         with session() as connection:
@@ -79,11 +79,15 @@ class Crypto:
             connection.commit()
 
     def from_sql(self):
-        engine = create_engine(f"sqlite:///{c.db_path}")
+        engine = create_engine(f"sqlite:///{config.db_path}")
         session = sessionmaker(engine)
 
-        with session() as connection:
-            result = connection.query(CryptoBalance).where(CryptoBalance.crypto == self.__crypto)
-            self._investment = result.investment
-            self._balance = result.balance
-            self._value = result.value
+        try:
+            with session() as connection:
+                result = connection.query(CryptoBalance).filter_by(crypto=self.__crypto).first()
+                self._investment = result.investment
+                self._balance = result.balance
+                self._value = result.value
+        except AttributeError:
+            print(f"{self.__crypto} has not been used and is therefore not in the database. "
+                  f"Default numbers will be used.")

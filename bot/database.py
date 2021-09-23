@@ -1,7 +1,7 @@
 from sqlalchemy import create_engine
 from sqlalchemy import Column, String, Integer, Float
 from sqlalchemy.ext.declarative import declarative_base
-import config
+import bot.config as config
 
 Base = declarative_base()
 
@@ -27,8 +27,7 @@ class StopLoss(Base):
 
 class OrderRecord(Base):
     __tablename__ = "orders"
-    index = Column(Integer, primary_key=True)
-    order_id = Column(Integer, nullable=False)
+    order_id = Column(Integer, primary_key=True)
     symbol = Column(String(250), nullable=False)
     price = Column(Float, nullable=False)
     investment = Column(Float, nullable=False)
