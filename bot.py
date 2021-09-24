@@ -212,10 +212,10 @@ class TraderBot:
         asset_step_size = self.get_step_size(asset_symbol)
 
         if action == "buy":
-            price *= 1.001
+            price *= 1.002
             order_quantity = calc_correct_quantity(asset_step_size, order_quantity / price)
         else:
-            price *= 0.999
+            price *= 0.998
 
         new_price = calc_correct_quantity(self.get_tick_size(asset_symbol), price)
         receipt = self.api.post_order(asset=asset_symbol, action=action, order_type="limit", price=new_price,
@@ -346,8 +346,7 @@ class TraderBot:
 
                         if quantity is None:
                             continue
-                        elif action == "quick sell":
-                            order_receipt = self.place_order(asset_symbol=asset, order_quantity=quantity, action="sell")
+
                         else:
                             order_receipt = self.place_limit_order(asset_symbol=asset,
                                                                    order_quantity=quantity, action=action)
