@@ -94,4 +94,4 @@ class TrailingStopLoss:
             self.trail = self.calculate_stop_loss()
 
     def calculate_stop_loss(self):
-        return self.highest * 0.95
+        return self.highest * 0.999
