@@ -15,15 +15,16 @@ def create_dataframe(data):
     df.index = pd.to_datetime(df.index, unit="ms")
     df = df.astype(float)
 
-    # Calculate SMA
-    df[f"SMA_{MA1}"] = df["Price"].rolling(window=MA1).mean()
-    df[f"SMA_{MA2}"] = df["Price"].rolling(window=MA2).mean()
+    if df.shape[0] == 200:
+        # Calculate SMA
+        df[f"SMA_{MA1}"] = df["Price"].rolling(window=MA1).mean()
+        df[f"SMA_{MA2}"] = df["Price"].rolling(window=MA2).mean()
 
-    # Calculate Bollinger bands
-    df["Std"] = df["Price"].rolling(window=STD).std()
-    df["MA_BOL"] = df["Price"].rolling(window=MA_BOL).mean()
-    df["Upper"] = df["MA_BOL"] + 0.5 * df["Std"]
-    df["Lower"] = df["MA_BOL"] - 2.0 * df["Std"]
+        # Calculate Bollinger bands
+        df["Std"] = df["Price"].rolling(window=STD).std()
+        df["MA_BOL"] = df["Price"].rolling(window=MA_BOL).mean()
+        df["Upper"] = df["MA_BOL"] + 0.5 * df["Std"]
+        df["Lower"] = df["MA_BOL"] - 2.0 * df["Std"]
 
     # Calculate RSI with SMA
     df["RSI"] = pta.rsi(df["Price"], length=14)
