@@ -1,5 +1,3 @@
-import bot.config as config
-from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from bot.database import CryptoBalance
 
@@ -62,29 +60,33 @@ class Crypto:
     def update(self):
         pass
 
-    # TODO: Make the function update as default value
-    def to_sql(self, connection, update=True):
-        session = sessionmaker(connection)
+    def to_sql(self, engine, update=True):
+        session = sessionmaker(engine)
 
-        with session() as connection:
-            new_update = CryptoBalance(
-                crypto=self.__crypto,
-                fiat=self.__fiat,
-                investment=self._investment,
-                balance=self._balance,
-                value=self._value
-            )
+        with session() as con:
 
-            connection.add(new_update)
-            connection.commit()
+            if update:
+                update = {"investment": self._investment, "balance": self._balance, "value": self._value}
+                con.query(CryptoBalance).filter_by(crypto=self.__crypto, fiat=self.__fiat).update(update)
 
-    def from_sql(self):
-        engine = create_engine(f"sqlite:///{config.db_path}")
+            else:
+                new_update = CryptoBalance(
+                    crypto=self.__crypto,
+                    fiat=self.__fiat,
+                    investment=self._investment,
+                    balance=self._balance,
+                    value=self._value
+                )
+                con.add(new_update)
+
+            con.commit()
+
+    def from_sql(self, engine):
         session = sessionmaker(engine)
 
         try:
-            with session() as connection:
-                result = connection.query(CryptoBalance).filter_by(crypto=self.__crypto).first()
+            with session() as con:
+                result = con.query(CryptoBalance).filter_by(crypto=self.__crypto).first()
                 self._investment = result.investment
                 self._balance = result.balance
                 self._value = result.value

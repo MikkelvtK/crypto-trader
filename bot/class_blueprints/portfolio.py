@@ -1,6 +1,3 @@
-from crypto import Crypto
-
-
 class Portfolio:
 
     def __init__(self, owner, fiat, fiat_balance, hodl_crypto, cryptos):
@@ -11,7 +8,7 @@ class Portfolio:
         else:
             self._fiat_balance = fiat_balance
         self._hodl_crypto = hodl_crypto
-        self._crypto_balances = {crypto: Crypto(crypto, fiat).from_sql() for crypto in cryptos}
+        self._crypto_balances = {crypto.get_symbol(): crypto for crypto in cryptos}
 
     @property
     def owner(self):
