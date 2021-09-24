@@ -62,9 +62,9 @@ class Crypto:
     def update(self):
         pass
 
-    def to_sql(self):
-        engine = create_engine(f"sqlite:///{config.db_path}")
-        session = sessionmaker(engine)
+    # TODO: Make the function update as default value
+    def to_sql(self, connection, update=True):
+        session = sessionmaker(connection)
 
         with session() as connection:
             new_update = CryptoBalance(

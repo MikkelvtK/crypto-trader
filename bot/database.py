@@ -52,4 +52,5 @@ if __name__ == "__main__":
 
     # Create database and connection
     engine = create_engine(f"sqlite:///{config.db_path}")
+    Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
