@@ -92,7 +92,12 @@ class TraderBot:
 
     def retrieve_usable_data(self, asset_symbol, strategy):
         """Get new data from binance API and manipulate to usable data."""
-        new_data = self.api.get_history(symbol=asset_symbol, interval=strategy.interval[0], limit=MA2)
+        if strategy.name == "golden cross":
+            limit = 200
+        else:
+            limit = 20
+
+        new_data = self.api.get_history(symbol=asset_symbol, interval=strategy.interval[0], limit=limit)
         df = create_dataframe(new_data)
         self.print_new_data(df, asset_symbol.upper(), strategy)
         return df
@@ -371,5 +376,5 @@ class TraderBot:
 
             # Bot can sleep. No new data has to be retrieved for a while
             if just_posted:
-                time.sleep(1740)
+                time.sleep(self.strategies[1].inverval[2])
                 just_posted = False
