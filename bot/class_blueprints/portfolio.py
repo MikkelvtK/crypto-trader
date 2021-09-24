@@ -1,12 +1,9 @@
 class Portfolio:
 
-    def __init__(self, owner, fiat, fiat_balance, hodl_crypto, cryptos):
+    def __init__(self, owner, fiat, hodl_crypto, cryptos):
         self._owner = owner
         self._fiat = fiat
-        if fiat_balance < 0:
-            raise Exception("Fiat balance cannot be negative.")
-        else:
-            self._fiat_balance = fiat_balance
+        self._fiat_balance = 0
         self._hodl_crypto = hodl_crypto
         self._crypto_balances = {crypto.get_symbol(): crypto for crypto in cryptos}
 
@@ -39,3 +36,13 @@ class Portfolio:
 
     def query_crypto_balance(self, crypto):
         return self._crypto_balances[crypto]
+
+    def get_active_balances_count(self):
+        k = 0
+
+        for symbol, crypto in self._crypto_balances.items():
+            if crypto.balance > 0:
+                k += 1
+
+        return k
+

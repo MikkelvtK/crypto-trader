@@ -1,22 +1,23 @@
 import config
-from bot.class_blueprints.trader import TraderAPI
-from bot.class_blueprints.strategies import *
+import constants
+from bot.class_blueprints.strategies import CrossingSMA
+from bot.class_blueprints.crypto import Crypto
 from trader_bot import TraderBot
-from constants import *
-from config import *
 
 
 def main():
 
     # Create all objects
-    api_trader = TraderAPI()
-    crossing_sma = CrossingSMA(MA1, MA2, interval=H4, assets=HODL_ASSETS, name="golden cross")
-    bottom_rsi = BottomRSI(interval=H1, assets=DAY_TRADING_ASSETS, name="rsi dips")
-    bollinger = BollingerBands(interval=M30, assets=DAY_TRADING_ASSETS, name="bol bands")
-    strategies = (crossing_sma, bottom_rsi, bollinger)
+    cryptos = [Crypto(crypto, config.FIAT_MARKET) for crypto in config.CRYPTOS]
+
+    strategies = []
+    for crypto in cryptos:
+        symbol = crypto.get_symbol()
+        strategy = CrossingSMA(symbol=symbol, interval=constants.H4, name="Golden Cross")
+        strategies.append(strategy)
 
     # Create bot object and activate it
-    bot = TraderBot(config.BOT_NAME, api_trader, strategies, FIAT_MARKET)
+    bot = TraderBot(name=config.BOT_NAME, strategies=strategies, cryptos=cryptos)
     bot.activate()
 
 

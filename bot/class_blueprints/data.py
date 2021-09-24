@@ -2,7 +2,7 @@ import pandas as pd
 import pandas_ta as pta
 
 
-class DataLogger:
+class Data:
 
     def __init__(self, data):
         self._df = pd.DataFrame(data)
