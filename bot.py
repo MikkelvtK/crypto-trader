@@ -142,7 +142,7 @@ class TraderBot:
 
         long = self.active_investments.loc[self.active_investments["type"] == "long"]
         short = self.active_investments.loc[self.active_investments["type"] == "short"]
-
+        count = short["type"].count()
         # The check for long investments
         if strategy.type == "long":
             active_assets = long["type"].count()
@@ -153,9 +153,16 @@ class TraderBot:
                 return rounded_investment
 
         # The check for short investments
-        elif strategy.type == "short" and short["type"].count() < 2:
-            modifier = 0.5
-            if short["type"].count() == 1:
+        elif strategy.type == "short" and count < 5:
+            if count == 0:
+                modifier = 0.2
+            elif count == 1:
+                modifier = 0.4
+            elif count == 2:
+                modifier = 0.6
+            elif count == 3:
+                modifier = 0.8
+            else:
                 modifier = 1
 
             investment = self.available_to_invest["available day trading budget"] * modifier
