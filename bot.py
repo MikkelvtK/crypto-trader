@@ -325,12 +325,12 @@ class TraderBot:
 
         while True:
             current_time = time.time()
-            time.sleep(5)
 
             for strategy in self.strategies:
 
                 # Checks for each strategy if new data can be retrieved
                 if -1 <= (current_time % strategy.interval[1]) <= 1:
+                    time.sleep(10)
 
                     for asset in strategy.assets:
 
@@ -376,5 +376,5 @@ class TraderBot:
 
             # Bot can sleep. No new data has to be retrieved for a while
             if just_posted:
-                time.sleep(self.strategies[1].inverval[2])
+                time.sleep(self.strategies[1].interval[2])
                 just_posted = False
