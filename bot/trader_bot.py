@@ -140,6 +140,7 @@ class TraderBot:
                     rounded_price = self.get_correct_fractional_part(symbol=strategy.symbol, number=price)
                     crypto_coins = fiat_amount / rounded_price
 
+                    #TODO: Finish updating code below
                     if crypto_coins is None:
                         continue
                     elif action == "quick sell":
