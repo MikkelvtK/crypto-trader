@@ -3,18 +3,19 @@ from bot.class_blueprints.data import Data
 
 class Strategy:
 
-    def __init__(self, symbol, interval, name, strategy_type, stop_loss):
+    def __init__(self, symbol, interval, name, strategy_type, stop_loss, limit):
         self.symbol = symbol
         self.name = name
         self.interval = interval
         self.type = strategy_type
         self.trailing_stop_loss = stop_loss
+        self.limit = limit
 
 
 class CrossingSMA(Strategy):
 
     def __init__(self, symbol, interval, name):
-        super().__init__(symbol=symbol, interval=interval, name=name, strategy_type="long", stop_loss=False)
+        super().__init__(symbol=symbol, interval=interval, name=name, strategy_type="long", stop_loss=False, limit=200)
         self.__ma1 = 50
         self.__ma2 = 200
         self._current_data = None

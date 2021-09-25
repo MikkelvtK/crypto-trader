@@ -53,6 +53,9 @@ class Order:
         self._status = receipt["status"].lower()
 
     def to_sql(self, engine, buy_order_id=None):
+        if self.side == "sell" and buy_order_id is None:
+            raise Exception("A sell order cannot be logged without a buy_order_id from the corresponding buy_order.")
+
         session = sessionmaker(engine)
 
         with session() as connection:

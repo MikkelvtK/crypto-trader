@@ -92,7 +92,7 @@ class TraderAPI:
     def get_exchange_info(self, asset):
         """Get asset information"""
         request = "/api/v3/exchangeInfo"
-        return requests.get(self.endpoint + request, params={"symbol": asset})
+        return requests.get(self.endpoint + request, params={"symbol": asset.upper()})
 
     @check_response
     @connection_authenticator
@@ -110,6 +110,19 @@ class TraderAPI:
         query_string = f"symbol={symbol}&orderId={order_id}&timestamp={ms_time}"
         signature = hmac.new(self.secret.encode("utf-8"), query_string.encode("utf-8"), hashlib.sha256).hexdigest()
         params["signature"] = signature
+        return requests.get(self.endpoint + request, params=params, headers=self.header)
+
+    @check_response
+    @connection_authenticator
+    def cancel_orders(self, symbol):
+        request = "api/v3/openOrders"
+        ms_time = round(time.time() * 1000)
+
+        params = {
+            "symbol": symbol.upper(),
+            "timestamp": ms_time,
+        }
+
         return requests.get(self.endpoint + request, params=params, headers=self.header)
 
 
