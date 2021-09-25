@@ -1,10 +1,9 @@
 class Portfolio:
 
-    def __init__(self, owner, fiat, hodl_crypto, cryptos):
+    def __init__(self, owner, fiat, cryptos):
         self._owner = owner
         self._fiat = fiat
         self._fiat_balance = 0
-        self._hodl_crypto = hodl_crypto
         self._crypto_balances = {crypto.get_symbol(): crypto for crypto in cryptos}
 
     @property
@@ -25,10 +24,6 @@ class Portfolio:
             raise Exception("Fiat balance cannot be negative.")
         else:
             self._fiat_balance = new_fiat_balance
-
-    @property
-    def hodl_crypto(self):
-        return self._hodl_crypto
 
     @property
     def crypto_balances(self):

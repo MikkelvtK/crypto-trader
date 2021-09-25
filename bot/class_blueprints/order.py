@@ -1,8 +1,6 @@
 import math
-import bot.config as c
-from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from bot.database import OrderRecord
+from bot.database import OrderRecord, Trade
 
 
 class Order:
@@ -54,21 +52,38 @@ class Order:
         self._time = math.floor(receipt["transactTime"] / 1000)
         self._status = receipt["status"].lower()
 
-    def to_sql(self):
-        engine = create_engine(f"sqlite:///{c.db_path}")
+    def to_sql(self, engine, buy_order_id=None):
         session = sessionmaker(engine)
 
         with session() as connection:
+            if self.side == "buy":
+                trade = Trade(
+                    buy_order_id=self._id,
+                    sell_order_id=0,
+                    open=True
+                )
+                connection.add(trade)
+
+            else:
+                db_update = {"sell_order_id": self._id, "open": False}
+                connection.query(Trade).filter_by(buy_order_id=buy_order_id).update(db_update)
+                trade = connection.query(Trade).filter_by(buy_order_id=buy_order_id).first()
+
             new_order = OrderRecord(
                 order_id=self._id,
                 symbol=self.symbol,
-                price=self.price,
-                investment=self.investment,
-                coins=self._coins,
+                crypto_price=self.price,
+                fiat_value=self.investment,
+                crypto_coins=self._coins,
                 side=self.side,
                 order_type=self.type,
                 time=self._time,
-                status=self._status
+                status=self._status,
             )
+
+            new_order.trade = trade
             connection.add(new_order)
             connection.commit()
+
+#TODO 1: Create query method for orders and trades
+#TODO 2: Create method to return if trade is open (bool result)

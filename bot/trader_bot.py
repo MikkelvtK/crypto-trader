@@ -20,7 +20,6 @@ class TraderBot:
         self.strategies = strategies
         self.portfolio = Portfolio(owner=config.USER,
                                    fiat=config.FIAT_MARKET,
-                                   hodl_crypto=config.HODL_CRYPTOS,
                                    cryptos=cryptos)
 
         # Engine to Database
@@ -71,6 +70,7 @@ class TraderBot:
         if investment > 10:
             return investment
 
+    #TODO: Get crypto currency to sell from active balance
     def retrieve_coins(self, asset_symbol, strategy):
         """Checks if placing a sell order is warranted"""
         active_trades = self.active_investments.loc[self.active_investments["strategy"] == strategy.name]
@@ -121,78 +121,6 @@ class TraderBot:
             time.sleep(5)
             confirmation = self.api.query_order(asset_symbol=asset_symbol, order_id=receipt["orderId"])
         return confirmation
-
-    # ----- LOGGING ORDERS ----- #
-
-    # ORDERS #
-    def log_buy_order(self, asset_symbol, coins, investment, strategy):
-        """Saves active orders to load when restarting."""
-        with self.session() as new_session:
-            new_buy_order = TradeLog(
-                asset=asset_symbol,
-                coins=coins,
-                investment=investment,
-                strategy=strategy.name,
-                type=strategy.type
-            )
-
-            new_session.add(new_buy_order)
-            new_session.commit()
-
-    def delete_sold_order(self, asset_symbol, strategy):
-        """Delete buy order from database when asset is sold."""
-        metadata = sqlalchemy.MetaData()
-        table = sqlalchemy.Table("active_trades", metadata, autoload_with=self.engine)
-        action_to_execute = table.delete().where(table.columns.asset == asset_symbol,
-                                                 table.columns.strategy == strategy.name)
-        with self.engine.connect() as connection:
-            connection.execute(action_to_execute)
-
-    def update_long_trade(self, asset_symbol, coins, investment, strategy):
-        """Update database with any changes in trade"""
-        metadata = sqlalchemy.MetaData()
-        table = sqlalchemy.Table("active_trades", metadata, autoload_with=self.engine)
-        db_update = sqlalchemy.update(table).where(table.columns.strategy == strategy.name,
-                                                   table.columns.asset == asset_symbol).\
-            values(coins=coins, investment=investment)
-
-        with self.engine.connect() as connection:
-            connection.execute(db_update)
-
-    # TRAILING STOP LOSS #
-    def log_stop_loss(self, stop_loss):
-        """Save a newly activated trailing stop loss"""
-        with self.session() as new_session:
-            new_stop_loss = StopLoss(
-                strategy_name=stop_loss.strategy_name,
-                asset=stop_loss.asset,
-                highest=stop_loss.highest,
-                trail=stop_loss.trail
-            )
-
-            new_session.add(new_stop_loss)
-            new_session.commit()
-
-    def update_stop_loss(self, stop_loss):
-        """Update any changes to the trailing stop loss in the database"""
-        metadata = sqlalchemy.MetaData()
-        table = sqlalchemy.Table("stop_losses", metadata, autoload_with=self.engine)
-
-        db_update = sqlalchemy.update(table).where(table.columns.strategy_name == stop_loss.strategy_name,
-                                                   table.columns.asset == stop_loss.asset).\
-            values(highest=stop_loss.highest, trail=stop_loss.trail)
-
-        with self.engine.connect() as connection:
-            connection.execute(db_update)
-
-    def delete_stop_loss(self, stop_loss):
-        """Delete trailing stop loss if asset is sold"""
-        metadata = sqlalchemy.MetaData()
-        table = sqlalchemy.Table("stop_losses", metadata, autoload_with=self.engine)
-        action_to_execute = table.delete().where(table.columns.strategy_name == stop_loss.strategy_name,
-                                                 table.columns.asset == stop_loss.asset)
-        with self.engine.connect() as connection:
-            connection.execute(action_to_execute)
 
     # ----- VISUAL FEEDBACK ----- #
 
