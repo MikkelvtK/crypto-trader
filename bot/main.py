@@ -1,7 +1,7 @@
 import config
 from sqlalchemy import create_engine
-from bot.class_blueprints.strategies import Strategy
-from bot.class_blueprints.crypto import Crypto
+from class_blueprints.strategies import Strategy
+from class_blueprints.crypto import Crypto
 from trader_bot import TraderBot
 
 

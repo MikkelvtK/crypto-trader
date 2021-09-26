@@ -2,9 +2,9 @@ import sqlalchemy
 import math
 from decorators import *
 from database import *
-from bot.class_blueprints.trader import TraderAPI
-from bot.class_blueprints.order import Order
-from bot.class_blueprints.portfolio import Portfolio
+from class_blueprints.trader import TraderAPI
+from class_blueprints.order import Order
+from class_blueprints.portfolio import Portfolio
 
 
 class TraderBot:
@@ -192,3 +192,5 @@ class TraderBot:
             if just_posted:
                 time.sleep(3540)
                 just_posted = False
+
+#TODO: Create query if bull-market is active
