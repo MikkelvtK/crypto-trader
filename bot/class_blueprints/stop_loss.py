@@ -1,6 +1,6 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from bot.database import StopLoss
+from database import StopLoss
 import config as config
 
 

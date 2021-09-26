@@ -1,6 +1,6 @@
 import hashlib
 import hmac
-from bot.decorators import *
+from decorators import *
 
 
 class TraderAPI:

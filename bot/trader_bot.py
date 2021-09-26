@@ -125,7 +125,7 @@ class TraderBot:
     @add_border
     def print_new_data(self, df, strategy):
         """Print new data result"""
-        message = f"RETRIEVING DATA FOR {strategy.upper()}"
+        message = f"RETRIEVING DATA FOR {strategy.symbol.upper()}"
         data = df.iloc[-1, :]
         return message, data
 
