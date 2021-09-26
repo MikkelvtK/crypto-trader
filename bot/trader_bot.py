@@ -1,12 +1,9 @@
 import sqlalchemy
-import bot.config as config
+import math
 from decorators import *
-from functions import *
-from constants import *
 from database import *
-from bot.class_blueprints.stop_loss import TrailingStopLoss
 from bot.class_blueprints.trader import TraderAPI
-from bot.class_blueprints.crypto import Crypto
+from bot.class_blueprints.order import Order
 from bot.class_blueprints.portfolio import Portfolio
 
 
@@ -62,15 +59,21 @@ class TraderBot:
         if investment > 10:
             return investment
 
-    def get_coins_to_buy(self, crypto_price, investment):
-        pass
+    def get_coins_to_buy(self, strategy):
+        price = strategy.current_data["Price"].iloc[-1]
+        fiat_amount = self.get_investment_amount()
+        rounded_price = self.get_correct_fractional_part(symbol=strategy.symbol, number=price)
+
+        if fiat_amount:
+            crypto_coins = fiat_amount / rounded_price
+            rounded_coins = self.get_correct_fractional_part(symbol=strategy.symbol, number=crypto_coins, price=False)
+            return rounded_price, rounded_coins
 
     def get_coins_to_sell(self, symbol):
         """Checks if placing a sell order is warranted"""
         crypto = self.portfolio.query_crypto_balance(crypto=symbol)
         crypto_coins = crypto.balance
-        rounded_crypto_coins = self.get_correct_fractional_part(symbol=symbol, number=crypto_coins, price=False)
-        return rounded_crypto_coins
+        return self.get_correct_fractional_part(symbol=symbol, number=crypto_coins, price=False)
 
     # ----- PLACE ORDERS ----- #
 
@@ -91,12 +94,38 @@ class TraderBot:
 
         return self.api.cancel_orders(symbol=symbol)
 
+    def process_order(self, receipt):
+        crypto = self.portfolio.query_crypto_balance(receipt["symbol"].lower())
+        self.portfolio.fiat_balance = self.balance_request()
+        investment = float(receipt["price"]) * float(receipt["executedQty"])
+
+        order = Order(
+            order_id=receipt["orderId"],
+            symbol=receipt["symbol"].lower(),
+            price=float(receipt["price"]),
+            investment=investment,
+            coins=float(receipt["executedQty"]),
+            side=receipt["side"].lower(),
+            type=receipt["type"].lower(),
+            time=receipt["transactTime"],
+            status=receipt["status"].lower()
+        )
+
+        if receipt["side"].lower() == "buy":
+            order.to_sql(engine=self.engine)
+            coins = float(receipt["executedQty"]) * 0.999
+            value = float(receipt["price"]) * coins
+            crypto.update(investment=investment, balance=coins, value=value)
+        else:
+            order.to_sql(engine=self.engine, buy_order_id=order.get_last_buy_order(engine=self.engine).order_id)
+            crypto.update(investment=0, balance=0, value=0)
+
     # ----- VISUAL FEEDBACK ----- #
 
     @add_border
-    def print_new_data(self, df, asset_symbol, strategy):
+    def print_new_data(self, df, strategy):
         """Print new data result"""
-        message = f"RETRIEVING DATA FOR {asset_symbol.upper()} {strategy.name.upper()} STRATEGY"
+        message = f"RETRIEVING DATA FOR {strategy.upper()}"
         data = df.iloc[-1, :]
         return message, data
 
@@ -113,66 +142,53 @@ class TraderBot:
     def activate(self):
         """Activate the bot"""
         just_posted = False
+        self.portfolio.fiat_balance = self.balance_request()
 
         while True:
             current_time = time.time()
-            time.sleep(5)
 
             for strategy in self.strategies:
 
                 # Checks for each strategy if new data can be retrieved
-                if -1 <= (current_time % strategy.interval[1]) <= 1:
+                if -1 <= (current_time % strategy.interval_1h[1]) <= 1:
                     time.sleep(10)
 
                     # Get data from binance and determine if action needs to be taken
                     new_data = self.api.get_history(symbol=strategy.symbol,
-                                                    interval=strategy.interval,
-                                                    limit=strategy.limit)
-                    strategy.current_data = new_data
+                                                    interval=strategy.interval_4h[0],
+                                                    limit=200)
+                    strategy.current_data_4h = new_data
+                    self.print_new_data(df=strategy.current_data_4h, strategy=strategy)
                     action = strategy.check_for_signal()
+
+                    if action == "check for opportunity":
+                        new_data = self.api.get_history(symbol=strategy.symbol,
+                                                        interval=strategy.interval_1h[0],
+                                                        limit=14)
+                        strategy.current_data_1h = new_data
+                        self.print_new_data(df=strategy.current_data_1h, strategy=strategy)
+                        action = strategy.check_for_opportunity()
 
                     if action is None:
                         continue
 
                     # Prepare and place order
-                    #TODO: Place in method; returns coins_to_buy
-                    price = strategy.current_data["Price"].iloc[-1]
-                    fiat_amount = self.get_investment_amount()
-                    rounded_price = self.get_correct_fractional_part(symbol=strategy.symbol, number=price)
-                    crypto_coins = fiat_amount / rounded_price
+                    price, crypto_coins = self.get_coins_to_buy(strategy=strategy)
 
-                    #TODO: Finish updating code below
                     if crypto_coins is None:
                         continue
-                    elif action == "quick sell":
-                        order_receipt = self.place_order(asset_symbol=asset, order_quantity=quantity, action="sell")
-                    else:
-                        order_receipt = self.place_limit_order(asset_symbol=asset,
-                                                               order_quantity=quantity, action=action)
 
-                    if order_receipt:
+                    order_receipt = self.place_limit_order(symbol=strategy.symbol,
+                                                           price=price, action=action, crypto_coins=crypto_coins)
 
-                        # If order is placed, update and log all attributes
-                        new_coins = float(order_receipt["executedQty"]) * 0.999
-                        if action == "buy":
-                            self.log_buy_order(asset_symbol=asset, coins=new_coins,
-                                               investment=quantity, strategy=strategy)
-                            if strategy.trailing_stop_loss:
-                                stop_loss = TrailingStopLoss(strategy.name, asset, strategy.current_price)
-                                self.active_stop_losses[strategy.name][asset] = stop_loss
-                                self.log_stop_loss(stop_loss)
-                        else:
-                            self.delete_sold_order(asset_symbol=asset, strategy=strategy)
-                            if strategy.trailing_stop_loss:
-                                self.delete_stop_loss(stop_loss=self.active_stop_losses[strategy.name][asset])
-                                del self.active_stop_losses[strategy.name][asset]
+                    if order_receipt["status"].lower() == "filled":
 
-                        self.update_attributes()
-                        self.print_new_order(action, asset)
+                        self.process_order(receipt=order_receipt)
+                        self.print_new_order(action, strategy.symbol)
 
                     just_posted = True
 
             # Bot can sleep. No new data has to be retrieved for a while
             if just_posted:
-                time.sleep(1740)
+                time.sleep(3540)
                 just_posted = False

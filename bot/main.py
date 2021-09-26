@@ -1,19 +1,21 @@
 import config
-import constants
-from bot.class_blueprints.strategies import CrossingSMA
+from sqlalchemy import create_engine
+from bot.class_blueprints.strategies import Strategy
 from bot.class_blueprints.crypto import Crypto
 from trader_bot import TraderBot
 
 
 def main():
+    engine = create_engine(f"sqlite:///{config.db_path}")
 
     # Create all objects
     cryptos = [Crypto(crypto, config.FIAT_MARKET) for crypto in config.CRYPTOS]
 
     strategies = []
     for crypto in cryptos:
+        crypto.from_sql(engine=engine)
         symbol = crypto.get_symbol()
-        strategy = CrossingSMA(symbol=symbol, interval=constants.H4, name="Golden Cross")
+        strategy = Strategy(symbol=symbol, name="Golden Cross")
         strategies.append(strategy)
 
     # Create bot object and activate it

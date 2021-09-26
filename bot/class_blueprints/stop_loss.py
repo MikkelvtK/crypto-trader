@@ -43,3 +43,6 @@ class TrailingStopLoss:
                 self.__index = new_stop_loss.index
 
             connection.commit()
+
+#TODO: Give trailing stop loss active status
+#TODO: Create from_sql function

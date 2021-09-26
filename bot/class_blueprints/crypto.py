@@ -57,8 +57,10 @@ class Crypto:
     def get_symbol(self):
         return self.__crypto + self.__fiat
 
-    def update(self):
-        pass
+    def update(self, investment, balance, value):
+        self.investment = investment
+        self.balance = balance
+        self.value = value
 
     def to_sql(self, engine, update=True):
         session = sessionmaker(engine)
@@ -91,5 +93,5 @@ class Crypto:
                 self._balance = result.balance
                 self._value = result.value
         except AttributeError:
-            print(f"{self.__crypto} has not been used and is therefore not in the database. "
+            print(f"{self.__crypto + self.__fiat} has not been used and is therefore not in the database. "
                   f"Default numbers will be used.")

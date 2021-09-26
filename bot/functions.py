@@ -1,7 +1,4 @@
-import pandas as pd
-import pandas_ta as pta
 import math
-from constants import *
 
 
 def calc_correct_quantity(step_size, coins):
