@@ -34,9 +34,12 @@ class OrderRecord(Base):
 class Trade(Base):
     __tablename__ = "trades"
     trade_id = Column(Integer, primary_key=True)
+    symbol = Column(String(250, nullanble=False))
     buy_order_id = Column(Integer, nullable=False)
-    sell_order_id = Column(Integer, nullable=False)
+    sell_order_id = Column(Integer, nullable=True)
     open = Column(Boolean, nullable=False)
+    stop_loss_id = Column(Integer, ForeignKey("stop_losses.index"), nullable=True)
+    stop_loss = relationship("StopLoss")
 
 
 class CryptoBalance(Base):

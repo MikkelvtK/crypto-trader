@@ -44,5 +44,8 @@ class TrailingStopLoss:
 
             connection.commit()
 
-#TODO: Give trailing stop loss active status
-#TODO: Create from_sql function
+    def query(self):
+        session = sessionmaker(self.__engine)
+
+        with session() as connection:
+            return connection.query(StopLoss).filter_by(index=self.__index).first()

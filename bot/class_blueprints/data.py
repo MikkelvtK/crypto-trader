@@ -22,5 +22,5 @@ class Data:
     def set_sma(self, window):
         self._df[f"SMA_{window}"] = self._df["Price"].rolling(window=window).mean()
 
-    def set_rsi(self, window=14):
-        self._df["RSI"] = pta.rsi(self._df["Price"], length=window)
+    def set_rsi(self):
+        self._df["RSI"] = pta.rsi(self._df["Price"], length=20)

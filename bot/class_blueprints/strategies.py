@@ -16,7 +16,7 @@ class Strategy:
         self._current_data_4h = None
         self._current_data_1h = None
         self._bull_market = False
-        self.__stop_loss = None
+        self._stop_loss = None
 
     @property
     def name(self):
@@ -60,12 +60,16 @@ class Strategy:
     @current_data_1h.setter
     def current_data_1h(self, data):
         new_data = Data(data=data)
-        new_data.set_rsi(window=self.__rsi)
+        new_data.set_rsi()
         self._current_data_1h = new_data.df
 
     @property
     def bull_market(self):
         return self._bull_market
+
+    @property
+    def stop_loss(self):
+        return self._stop_loss
 
     def check_for_bull_market(self):
         """Check if current data gives off a buy or sell signal"""
@@ -87,13 +91,13 @@ class Strategy:
         rsi = self._current_data_1h["RSI"].iloc[-1]
         price = self._current_data_1h["Price"].iloc[-1]
 
-        if rsi <= 25:
-            self.__stop_loss = TrailingStopLoss(strategy_name=self._name, symbol=self._symbol, current_price=price)
+        if rsi <= 25 and not self._stop_loss:
+            self._stop_loss = TrailingStopLoss(strategy_name=self._name, symbol=self._symbol, current_price=price)
             return "buy"
 
-        elif rsi >= 30:
-            self.__stop_loss = None
+        elif rsi >= 30 and self._stop_loss:
+            self._stop_loss = None
             return "sell"
 
-        elif self.__stop_loss:
-            self.__stop_loss.adjust_stop_loss(price=price)
+        elif self._stop_loss:
+            self._stop_loss.adjust_stop_loss(price=price)

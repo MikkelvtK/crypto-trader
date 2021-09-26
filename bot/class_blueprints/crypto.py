@@ -93,5 +93,5 @@ class Crypto:
                 self._balance = result.balance
                 self._value = result.value
         except AttributeError:
-            print(f"{self.__crypto + self.__fiat} has not been used and is therefore not in the database. "
+            print(f"{(self.__crypto + self.__fiat).title()} has not been used and is therefore not in the database. "
                   f"Default numbers will be used.")

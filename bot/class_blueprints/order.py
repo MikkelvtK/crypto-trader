@@ -55,7 +55,7 @@ class Order:
     def status(self, order_status):
         self._status = order_status.lower()
 
-    def to_sql(self, engine, buy_order_id=None):
+    def to_sql(self, engine, buy_order_id=None, stop_loss=None):
         if self._side == "sell" and buy_order_id is None:
             raise Exception("A sell order cannot be logged without a buy_order_id from the corresponding buy_order.")
 
@@ -64,10 +64,15 @@ class Order:
         with session() as connection:
             if self._side == "buy":
                 trade = Trade(
+                    symbol=self._symbol,
                     buy_order_id=self._id,
                     sell_order_id=0,
                     open=True
                 )
+
+                if stop_loss:
+                    trade.stop_loss = stop_loss
+
                 connection.add(trade)
 
             else:

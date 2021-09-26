@@ -67,7 +67,8 @@ class TraderBot:
         if fiat_amount:
             crypto_coins = fiat_amount / rounded_price
             rounded_coins = self.get_correct_fractional_part(symbol=strategy.symbol, number=crypto_coins, price=False)
-            return rounded_price, rounded_coins
+            if (rounded_coins * rounded_price) <= fiat_amount:
+                return rounded_price, rounded_coins
 
     def get_coins_to_sell(self, symbol):
         """Checks if placing a sell order is warranted"""
@@ -94,7 +95,7 @@ class TraderBot:
 
         return self.api.cancel_orders(symbol=symbol)
 
-    def process_order(self, receipt):
+    def process_order(self, receipt, strategy):
         crypto = self.portfolio.query_crypto_balance(receipt["symbol"].lower())
         self.portfolio.fiat_balance = self.balance_request()
         investment = float(receipt["price"]) * float(receipt["executedQty"])
@@ -112,7 +113,12 @@ class TraderBot:
         )
 
         if receipt["side"].lower() == "buy":
-            order.to_sql(engine=self.engine)
+            if strategy.stop_loss:
+                stop_loss = strategy.stop_loss.query()
+                order.to_sql(engine=self.engine, stop_loss=stop_loss)
+            else:
+                order.to_sql(engine=self.engine)
+
             coins = float(receipt["executedQty"]) * 0.999
             value = float(receipt["price"]) * coins
             crypto.update(investment=investment, balance=coins, value=value)
@@ -159,7 +165,7 @@ class TraderBot:
                                                     limit=200)
                     strategy.current_data_4h = new_data
                     self.print_new_data(df=strategy.current_data_4h, strategy=strategy)
-                    action = strategy.check_for_signal()
+                    action = strategy.check_for_bull_market()
 
                     if action == "check for opportunity":
                         new_data = self.api.get_history(symbol=strategy.symbol,
@@ -182,8 +188,7 @@ class TraderBot:
                                                            price=price, action=action, crypto_coins=crypto_coins)
 
                     if order_receipt["status"].lower() == "filled":
-
-                        self.process_order(receipt=order_receipt)
+                        self.process_order(receipt=order_receipt, strategy=strategy)
                         self.print_new_order(action, strategy.symbol)
 
                     just_posted = True
@@ -192,5 +197,3 @@ class TraderBot:
             if just_posted:
                 time.sleep(3540)
                 just_posted = False
-
-#TODO: Create query if bull-market is active
