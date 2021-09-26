@@ -4,5 +4,5 @@ __pycache__/
 config.json
 .idea/
 *.db
-bot/config.py
+config.py
 settings.py
