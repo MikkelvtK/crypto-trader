@@ -46,12 +46,12 @@ class Crypto:
 
     def get_profit(self):
         if self.investment <= 0:
-            raise Exception(self.__NO_INVESTMENT)
+            return self.__NO_INVESTMENT
         return self.value - self.investment
 
     def get_profit_ratio(self):
         if self.investment <= 0:
-            raise Exception(self.__NO_INVESTMENT)
+            return self.__NO_INVESTMENT
         return (self.value - self.investment) / self.investment * 100
 
     def get_symbol(self):

@@ -135,6 +135,7 @@ class TraderBot:
                         continue
 
                     # Prepare and place order
+                    #TODO: Place in method; returns coins_to_buy
                     price = strategy.current_data["Price"].iloc[-1]
                     fiat_amount = self.get_investment_amount()
                     rounded_price = self.get_correct_fractional_part(symbol=strategy.symbol, number=price)
