@@ -1,6 +1,6 @@
 from sqlalchemy import create_engine
 from sqlalchemy import Column, String, Integer, Float, ForeignKey, Boolean
-from sqlalchemy.orm import relationship
+from sqlalchemy import relationship
 from sqlalchemy.ext.declarative import declarative_base
 import config
 
@@ -34,7 +34,7 @@ class OrderRecord(Base):
 class Trade(Base):
     __tablename__ = "trades"
     trade_id = Column(Integer, primary_key=True)
-    symbol = Column(String(250, nullanble=False))
+    symbol = Column(String(250), nullable=False)
     buy_order_id = Column(Integer, nullable=False)
     sell_order_id = Column(Integer, nullable=True)
     open = Column(Boolean, nullable=False)

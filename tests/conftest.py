@@ -1,9 +1,8 @@
 from bot.class_blueprints.trader import TraderAPI
-from bot.class_blueprints.strategies import *
 from bot import TraderBot
 from bot.constants import *
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy import sessionmaker
 import pytest
 from bot.decorators import *
 
@@ -39,14 +38,14 @@ def bot_budget(test_bot):
 
 @pytest.fixture
 def bot_stop_loss(test_bot):
-    test_bot.engine = create_engine(f"sqlite:///tests/data/trades.db")
-    test_bot.session = sessionmaker(test_bot.engine)
+    test_bot.__engine = create_engine(f"sqlite:///tests/data/trades.db")
+    test_bot.session = sessionmaker(test_bot.__engine)
     return test_bot
 
 
 @pytest.fixture
 def dataset1(test_bot):
-    data = test_bot.retrieve_usable_data("ETHUSDT", test_bot.strategies[0])
+    data = test_bot.retrieve_usable_data("ETHUSDT", test_bot._strategies[0])
     data[f"SMA_{MA1}"] = data[f"SMA_{MA1}"].replace([data[f"SMA_{MA1}"].iloc[-1]], 2000)
     data[f"SMA_{MA2}"] = data[f"SMA_{MA2}"].replace([data[f"SMA_{MA2}"].iloc[-1]], 1500)
     return test_bot, data
@@ -54,7 +53,7 @@ def dataset1(test_bot):
 
 @pytest.fixture
 def dataset2(test_bot):
-    bol_strategy = test_bot.strategies[2]
+    bol_strategy = test_bot._strategies[2]
     asset = "ETHUSDT"
     data = test_bot.retrieve_usable_data(asset, bol_strategy)
     stop_loss = TrailingStopLoss(bol_strategy.name, asset, 300)

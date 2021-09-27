@@ -1,4 +1,4 @@
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy import sessionmaker
 from database import CryptoBalance
 
 
@@ -13,6 +13,8 @@ class Crypto:
         self._investment = 0
         self._balance = 0
         self._value = 0
+
+    # ----- GETTERS / SETTERS ----- #
 
     @property
     def investment(self):
@@ -43,6 +45,8 @@ class Crypto:
         if self.investment <= 0:
             raise Exception(self.__NO_INVESTMENT)
         self._value = self.balance * current_price
+
+    # ----- CLASS METHODS ----- #
 
     def get_profit(self):
         if self.investment <= 0:

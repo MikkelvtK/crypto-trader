@@ -6,6 +6,8 @@ class Portfolio:
         self._fiat_balance = 0
         self._crypto_balances = {crypto.get_symbol(): crypto for crypto in cryptos}
 
+    # ----- GETTERS / SETTERS ----- #
+
     @property
     def owner(self):
         return self._owner
@@ -28,6 +30,8 @@ class Portfolio:
     @property
     def crypto_balances(self):
         return self._crypto_balances
+
+    # ----- CLASS METHODS ----- #
 
     def query_crypto_balance(self, crypto):
         return self._crypto_balances[crypto]

@@ -7,8 +7,8 @@ class Strategy:
     def __init__(self, symbol, name):
         self._name = name
         self._symbol = symbol
-        self._interval_4h = ("4h", 14400)
-        self._interval_1h = ("1h", 3600)
+        self._interval_4h = "4h"
+        self._interval_1h = "1h"
         self._type = "hodl"
         self.__ma1 = 50
         self.__ma2 = 200
@@ -17,6 +17,8 @@ class Strategy:
         self._current_data_1h = None
         self._bull_market = False
         self._stop_loss = None
+
+    # ----- GETTERS / SETTERS ----- #
 
     @property
     def name(self):
@@ -70,6 +72,8 @@ class Strategy:
     @property
     def stop_loss(self):
         return self._stop_loss
+
+    # ----- CLASS METHODS ----- #
 
     def check_for_bull_market(self):
         """Check if current data gives off a buy or sell signal"""

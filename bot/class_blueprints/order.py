@@ -1,4 +1,4 @@
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy import sessionmaker
 from database import OrderRecord, Trade
 
 
@@ -14,6 +14,8 @@ class Order:
         self._type = kwargs["type"]
         self._time = kwargs["time"]
         self._status = kwargs["status"]
+
+    # ----- GETTERS / SETTERS ----- #
 
     @property
     def id(self):
@@ -54,6 +56,8 @@ class Order:
     @status.setter
     def status(self, order_status):
         self._status = order_status.lower()
+
+    # ----- CLASS METHODS ----- #
 
     def to_sql(self, engine, buy_order_id=None, stop_loss=None):
         if self._side == "sell" and buy_order_id is None:

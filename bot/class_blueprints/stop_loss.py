@@ -1,5 +1,5 @@
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy import sessionmaker
 from database import StopLoss
 import config as config
 
@@ -14,6 +14,8 @@ class TrailingStopLoss:
         self.__highest = current_price
         self.__trail = self.__highest * 0.95
         self.__to_sql()
+
+    # ----- CLASS METHODS ----- #
 
     def adjust_stop_loss(self, price):
         """Adjust current highest point of the trailing stop loss if needed."""
