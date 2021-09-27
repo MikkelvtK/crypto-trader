@@ -1,4 +1,5 @@
 import sqlalchemy
+import psutil
 import math
 from decorators import *
 from database import *
@@ -70,6 +71,7 @@ class TraderBot:
             rounded_coins = self.get_correct_fractional_part(symbol=strategy.symbol, number=crypto_coins, price=False)
             if (rounded_coins * rounded_price) <= fiat_amount:
                 return rounded_price, rounded_coins
+            raise Exception("The limit order places an order higher than the given fiat amount.")
 
     def get_coins_to_sell(self, symbol):
         """Checks if placing a sell order is warranted"""
@@ -158,7 +160,9 @@ class TraderBot:
             for strategy in self._strategies:
 
                 if -1 <= (current_time % self.__timer) <= 1:
-                    time.sleep(10)
+                    if not just_posted:
+                        time.sleep(10)
+                        just_posted = True
 
                     new_data = self._api.get_history(symbol=strategy.symbol,
                                                      interval=strategy.interval_4h,
@@ -190,8 +194,7 @@ class TraderBot:
                         self.process_order(receipt=order_receipt, strategy=strategy)
                         self.print_new_order(action, strategy.symbol)
 
-                    just_posted = True
-
             if just_posted:
+                print(f"Current CPU usage: {psutil.cpu_percent(4)}.")
                 time.sleep(self.__timer - 60)
                 just_posted = False

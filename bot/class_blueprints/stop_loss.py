@@ -1,7 +1,7 @@
 from sqlalchemy import create_engine
-from sqlalchemy import sessionmaker
-from database import StopLoss
-import config as config
+from sqlalchemy.orm import sessionmaker
+from bot.database import StopLoss
+import bot.config as config
 
 
 class TrailingStopLoss:

@@ -1,5 +1,5 @@
-from sqlalchemy import sessionmaker
-from database import CryptoBalance
+from sqlalchemy.orm import sessionmaker
+from bot.database import CryptoBalance
 
 
 class Crypto:

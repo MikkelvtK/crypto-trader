@@ -1,6 +1,6 @@
 from sqlalchemy import create_engine
 from sqlalchemy import Column, String, Integer, Float, ForeignKey, Boolean
-from sqlalchemy import relationship
+from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 import config
 

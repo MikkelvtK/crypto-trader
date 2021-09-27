@@ -1,6 +1,6 @@
 import hashlib
 import hmac
-from decorators import *
+from bot.decorators import *
 
 
 class TraderAPI:
@@ -14,14 +14,14 @@ class TraderAPI:
     @check_response
     @connection_authenticator
     def get_latest_price(self, asset):
-        symbol_price_ticker = "/_api/v3/ticker/price"
+        symbol_price_ticker = "/api/v3/ticker/price"
         return requests.get(self.endpoint + symbol_price_ticker, params={"symbol": asset.upper()})
 
     @check_response
     @connection_authenticator
     def get_history(self, **kwargs):
         """Get history of asset price data"""
-        candlestick_data = "/_api/v3/klines"
+        candlestick_data = "/api/v3/klines"
 
         params = {
             "symbol": kwargs["symbol"].upper(),
@@ -38,7 +38,7 @@ class TraderAPI:
 
         # Prepare variables
         ms_time = round(time.time() * 1000)
-        request = "/_api/v3/account"
+        request = "/api/v3/account"
 
         # Create hashed signature
         query_string = f"timestamp={ms_time}"
@@ -55,7 +55,7 @@ class TraderAPI:
     @connection_authenticator
     def post_order(self, **kwargs):
         # Prepare variables
-        request = "/_api/v3/order"
+        request = "/api/v3/order"
         asset = kwargs["asset"].upper()
         side = kwargs["action"].upper()
         order_type = kwargs["order_type"].upper()
@@ -91,13 +91,13 @@ class TraderAPI:
     @connection_authenticator
     def get_exchange_info(self, asset):
         """Get asset information"""
-        request = "/_api/v3/exchangeInfo"
+        request = "/api/v3/exchangeInfo"
         return requests.get(self.endpoint + request, params={"symbol": asset.upper()})
 
     @check_response
     @connection_authenticator
     def query_order(self, asset_symbol, order_id):
-        request = "/_api/v3/order"
+        request = "/api/v3/order"
         ms_time = round(time.time() * 1000)
         symbol = asset_symbol.upper()
 
@@ -115,7 +115,7 @@ class TraderAPI:
     @check_response
     @connection_authenticator
     def cancel_orders(self, symbol):
-        request = "_api/v3/openOrders"
+        request = "api/v3/openOrders"
         ms_time = round(time.time() * 1000)
 
         params = {
