@@ -1,5 +1,5 @@
 from sqlalchemy.orm import sessionmaker
-from bot.database import CryptoBalance
+from database import CryptoBalance
 
 
 class Crypto:
@@ -61,7 +61,7 @@ class Crypto:
     def get_symbol(self):
         return self.__crypto + self.__fiat
 
-    def update(self, investment, balance, value):
+    def update(self, investment=0, balance=0, value=0):
         self.investment = investment
         self.balance = balance
         self.value = value

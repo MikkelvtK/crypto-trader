@@ -1,5 +1,5 @@
-from bot.class_blueprints.data import Data
-from bot.class_blueprints.stop_loss import TrailingStopLoss
+from class_blueprints.data import Data
+from class_blueprints.stop_loss import TrailingStopLoss
 
 
 class Strategy:

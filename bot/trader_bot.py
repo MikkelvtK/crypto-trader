@@ -61,23 +61,28 @@ class TraderBot:
         if investment > 10:
             return investment
 
-    def get_coins_to_buy(self, strategy):
+    def get_coins_to_trade(self, strategy, action):
         price = strategy.current_data["Price"].iloc[-1]
-        fiat_amount = self.get_investment_amount()
         rounded_price = self.get_correct_fractional_part(symbol=strategy.symbol, number=price)
 
-        if fiat_amount:
-            crypto_coins = fiat_amount / rounded_price
-            rounded_coins = self.get_correct_fractional_part(symbol=strategy.symbol, number=crypto_coins, price=False)
-            if (rounded_coins * rounded_price) <= fiat_amount:
-                return rounded_price, rounded_coins
-            raise Exception("The limit order places an order higher than the given fiat amount.")
+        if action == "buy":
+            fiat_amount = self.get_investment_amount()
 
-    def get_coins_to_sell(self, symbol):
-        """Checks if placing a sell order is warranted"""
-        crypto = self._portfolio.query_crypto_balance(crypto=symbol)
-        crypto_coins = crypto.balance
-        return self.get_correct_fractional_part(symbol=symbol, number=crypto_coins, price=False)
+            if fiat_amount:
+                crypto_coins = fiat_amount / rounded_price
+                rounded_coins = self.get_correct_fractional_part(symbol=strategy.symbol,
+                                                                 number=crypto_coins, price=False)
+                if (rounded_coins * rounded_price) <= fiat_amount:
+                    return rounded_price, rounded_coins
+                raise Exception("The limit order places an order higher than the given fiat amount.")
+
+        elif action == "sell":
+            crypto = self._portfolio.query_crypto_balance(crypto=strategy.symbol)
+            crypto_coins = crypto.balance
+            rounded_coins = self.get_correct_fractional_part(symbol=strategy.symbol, number=crypto_coins, price=False)
+            if crypto_coins == 0:
+                return
+            return rounded_price, rounded_coins
 
     # ----- PLACE ORDERS ----- #
 
@@ -128,7 +133,7 @@ class TraderBot:
             crypto.update(investment=investment, balance=coins, value=value)
         else:
             order.to_sql(engine=self.__engine, buy_order_id=order.get_last_buy_order(engine=self.__engine).order_id)
-            crypto.update(investment=0, balance=0, value=0)
+            crypto.update()
 
     # ----- VISUAL FEEDBACK ----- #
 
@@ -182,7 +187,7 @@ class TraderBot:
                     if action is None:
                         continue
 
-                    price, crypto_coins = self.get_coins_to_buy(strategy=strategy)
+                    price, crypto_coins = self.get_coins_to_trade(strategy=strategy, action=action)
 
                     if crypto_coins is None:
                         continue

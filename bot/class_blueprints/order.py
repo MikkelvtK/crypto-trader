@@ -1,5 +1,5 @@
 from sqlalchemy.orm import sessionmaker
-from bot.database import OrderRecord, Trade
+from database import OrderRecord, Trade
 
 
 class Order:
