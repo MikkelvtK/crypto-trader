@@ -82,10 +82,12 @@ class Strategy:
 
         # If short SMA > long SMA give off buy signal
         if ma1_value > ma2_value and not self._bull_market:
+            self._bull_market = True
             return "buy"
 
         # If long SMA > short SMA give off sell signal
         elif ma1_value < ma2_value and self._bull_market:
+            self._bull_market = False
             return "sell"
 
         elif not self._bull_market:
@@ -95,11 +97,11 @@ class Strategy:
         rsi = self._current_data_1h["RSI"].iloc[-1]
         price = self._current_data_1h["Price"].iloc[-1]
 
-        if rsi <= 25 and not self._stop_loss:
+        if rsi <= 30 and not self._stop_loss:
             self._stop_loss = TrailingStopLoss(strategy_name=self._name, symbol=self._symbol, current_price=price)
             return "buy"
 
-        elif rsi >= 30 and self._stop_loss:
+        elif rsi >= 35 and self._stop_loss:
             self._stop_loss = None
             return "sell"
 
