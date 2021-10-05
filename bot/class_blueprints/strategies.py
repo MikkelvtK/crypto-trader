@@ -82,8 +82,9 @@ class Strategy:
 
         # If short SMA > long SMA give off buy signal
         if ma1_value > ma2_value and not self._bull_market:
-            self._bull_market = True
-            return "buy"
+            if not self._stop_loss:
+                self._bull_market = True
+                return "buy"
 
         # If long SMA > short SMA give off sell signal
         elif ma1_value < ma2_value and self._bull_market:
