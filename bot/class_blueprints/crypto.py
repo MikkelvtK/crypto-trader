@@ -48,14 +48,6 @@ class Crypto:
 
     # ----- CLASS METHODS ----- #
 
-    #TODO: Rework this more elegantly
-    def balance_request(self, api):
-        """Get float value of total balance (available and currently invested)"""
-        for balance in api.get_balance()["balances"]:
-            if balance["asset"].lower() == self.__crypto:
-                self._balance = float(balance["free"])
-                print(self._balance)
-
     def get_profit(self):
         if self.investment <= 0:
             return self.__NO_INVESTMENT
@@ -83,7 +75,6 @@ class Crypto:
                 update = {"investment": self._investment, "balance": self._balance, "value": self._value}
                 con.query(CryptoBalance).filter_by(crypto=self.__crypto, fiat=self.__fiat).update(update)
 
-            #TODO: Rework this, it's never created
             else:
                 new_update = CryptoBalance(
                     crypto=self.__crypto,
@@ -106,5 +97,6 @@ class Crypto:
                 self._balance = result.balance
                 self._value = result.value
         except AttributeError:
+            self.to_sql(engine=engine, update=False)
             print(f"{(self.__crypto + self.__fiat).title()} has not been used and is therefore not in the database. "
                   f"Default numbers will be used.")

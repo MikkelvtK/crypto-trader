@@ -16,7 +16,8 @@ class Strategy:
         self._current_data_4h = None
         self._current_data_1h = None
         self._bull_market = False
-        self._stop_loss = None
+        self._stop_loss = TrailingStopLoss()
+        self._stop_loss.load()
 
     # ----- GETTERS / SETTERS ----- #
 
@@ -75,6 +76,9 @@ class Strategy:
 
     # ----- CLASS METHODS ----- #
 
+    def query_open_trades(self, engine):
+
+
     def check_for_bull_market(self):
         """Check if current data gives off a buy or sell signal"""
         ma1_value = self._current_data_4h[f"SMA_{self.__ma1}"].iloc[-1]
@@ -94,20 +98,20 @@ class Strategy:
         elif not self._bull_market:
             return "check for opportunity"
 
-    def check_for_opportunity(self, crypto):
+    def check_for_opportunity(self):
         rsi = self._current_data_1h["RSI"].iloc[-1]
         price = self._current_data_1h["Price"].iloc[-1]
 
         if rsi <= 30 and not self._stop_loss:
-            self._stop_loss = TrailingStopLoss(strategy_name=self._name, symbol=self._symbol, current_price=price)
+            self._stop_loss = TrailingStopLoss()
+            self._stop_loss.initialise(strategy_name=self._name, symbol=self._symbol, price=price)
             return "buy"
 
         elif rsi >= 35 and self._stop_loss:
+            self._stop_loss.close_stop_loss()
             self._stop_loss = None
             return "sell"
 
-        elif crypto.balance > 10:
-            if self._stop_loss:
-                self._stop_loss.adjust_stop_loss(price=price)
-            else:
-                self._stop_loss = TrailingStopLoss(strategy_name=self._name, symbol=self._symbol, current_price=price)
+        elif self._stop_loss:
+            self._stop_loss.adjust_stop_loss(price=price)
+

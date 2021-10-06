@@ -14,6 +14,7 @@ class StopLoss(Base):
     asset = Column(String(250), nullable=False)
     highest = Column(Float, nullable=False)
     trail = Column(Float, nullable=False)
+    open = Column(Boolean, nullable=False)
 
 
 class OrderRecord(Base):

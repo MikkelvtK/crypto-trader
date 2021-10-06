@@ -104,4 +104,4 @@ class Order:
         session = sessionmaker(engine)
 
         with session() as connection:
-            return connection.query(OrderRecord).filter_by(symbol=self._symbol, side="buy").last()
+            return connection.query(OrderRecord).filter_by(symbol=self._symbol, side="buy")

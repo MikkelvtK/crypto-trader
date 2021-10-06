@@ -133,7 +133,7 @@ class TraderBot:
             crypto.update(investment=investment, balance=coins, value=value)
             crypto.to_sql(engine=self.__engine)
         else:
-            order.to_sql(engine=self.__engine, buy_order_id=order.get_last_buy_order(engine=self.__engine).order_id)
+            order.to_sql(engine=self.__engine, buy_order_id=order.get_last_buy_order(engine=self.__engine)[-1].order_id)
             crypto.update()
             crypto.to_sql(engine=self.__engine)
 
@@ -159,12 +159,12 @@ class TraderBot:
     def activate(self):
         """Activate the bot"""
         just_posted = False
-        self._portfolio.fiat_balance = self.balance_request()
-        print(f"Current balance: {self._portfolio.fiat_balance}")
 
-        #TODO: Rework this more elegantly
-        crypto = self._portfolio.query_crypto_balance("veteur")
-        crypto.balance_request(api=self._api)
+        self._portfolio.fiat_balance = self.balance_request()
+        print(f"Current balance: {round(self._portfolio.fiat_balance, 2)}.")
+
+        for key, crypto in self._portfolio.crypto_balances.items():
+            print(f"Current balance for {crypto.get_symbol()}: {crypto.balance}.")
 
         while True:
             current_time = time.time()
