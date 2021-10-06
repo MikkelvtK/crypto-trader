@@ -37,7 +37,7 @@ class TrailingStopLoss:
                 stop_loss = connection.query(StopLoss).get(self.__index)
                 stop_loss.highest = self.__highest
                 stop_loss.trail = self.__trail
-                stop_loss.open = self.__open
+                stop_loss.open_stop_loss = self.__open
 
             else:
                 new_stop_loss = StopLoss(
@@ -45,7 +45,7 @@ class TrailingStopLoss:
                     asset=self.__asset,
                     highest=self.__highest,
                     trail=self.__trail,
-                    open=self.__open
+                    open_stop_loss=self.__open
                 )
 
                 connection.add(new_stop_loss)
