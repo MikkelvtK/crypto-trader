@@ -62,13 +62,13 @@ class TrailingStopLoss:
     def load(self):
         session = sessionmaker(self.__engine)
 
-            with session() as connection:
-                result = connection.query(StopLoss).filter_by(asset=self.__asset, open_stop_loss=True).first()
-                self.__index = result.index
-                self.__strategy_name = result.strategy_name
-                self.__asset = result.asset
-                self.__highest = result.highest
-                self.__trail = result.trail
+        with session() as connection:
+            result = connection.query(StopLoss).filter_by(asset=self.__asset, open_stop_loss=True).first()
+            self.__index = result.index
+            self.__strategy_name = result.strategy_name
+            self.__asset = result.asset
+            self.__highest = result.highest
+            self.__trail = result.trail
 
     def query(self):
         session = sessionmaker(self.__engine)
