@@ -176,7 +176,7 @@ class TraderBot:
                         just_posted = True
 
                     data, action = strategy.check_for_signal()
-                    self.print_new_data(df=data, strategy=strategy)
+                    self.print_new_data(df=data.df, strategy=strategy)
 
                     if action is None:
                         continue

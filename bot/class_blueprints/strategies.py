@@ -61,40 +61,40 @@ class Strategy:
         """Check if current data gives off a buy or sell signal"""
         data = self._get_market_state_data()
 
-        if data["EMA_50"].iloc[-1] > data["EMA_200"].iloc[-1]:
+        if data.df["EMA_50"].iloc[-1] > data.df["EMA_200"].iloc[-1]:
             self._market_state = "bull"
 
-            data = self._get_bull_scenario_data()
-            price = data["Price"].iloc[-1]
+            bull_data = self._get_bull_scenario_data()
+            price = bull_data.df["Price"].iloc[-1]
 
-            if data["EMA_9"].iloc[-1] > data["EMA_20"].iloc[-1] and not self._stop_loss:
+            if bull_data.df["EMA_9"].iloc[-1] > bull_data.df["EMA_20"].iloc[-1] and not self._stop_loss:
                 self._stop_loss = TrailingStopLoss()
                 self._stop_loss.initialise(strategy_name=self._name, symbol=self._symbol, price=price)
-                return data, "buy"
+                return bull_data, "buy"
 
-            elif data["EMA_9"].iloc[-1] < data["EMA_20"].iloc[-1] and self._stop_loss:
+            elif bull_data.df["EMA_9"].iloc[-1] < bull_data.df["EMA_20"].iloc[-1] and self._stop_loss:
                 self._stop_loss.close_stop_loss()
                 self._stop_loss = None
-                return data, "sell"
+                return bull_data, "sell"
 
             elif self._stop_loss:
                 self._stop_loss.adjust_stop_loss(price=price)
 
-        elif data["EMA_50"].iloc[-1] < data["EMA_200"].iloc[-1]:
+        elif data.df["EMA_50"].iloc[-1] < data.df["EMA_200"].iloc[-1]:
             self._market_state = "bear"
 
-            data = self._get_bear_scenario_data()
-            price = data["Price"].iloc[-1]
+            bear_data = self._get_bear_scenario_data()
+            price = bear_data.df["Price"].iloc[-1]
 
-            if data["RSI"].iloc[-1] <= 30 and not self._stop_loss:
+            if bear_data.df["RSI"].iloc[-1] <= 30 and not self._stop_loss:
                 self._stop_loss = TrailingStopLoss()
                 self._stop_loss.initialise(strategy_name=self._name, symbol=self._symbol, price=price)
-                return data, "buy"
+                return bear_data, "buy"
 
-            elif data["RSI"].iloc[-1] >= 35 and self._stop_loss:
+            elif bear_data.df["RSI"].iloc[-1] >= 35 and self._stop_loss:
                 self._stop_loss.close_stop_loss()
                 self._stop_loss = None
-                return data, "sell"
+                return bear_data, "sell"
 
             elif self._stop_loss:
                 self._stop_loss.adjust_stop_loss(price=price)
