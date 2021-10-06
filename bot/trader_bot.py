@@ -55,9 +55,6 @@ class TraderBot:
         if self._portfolio.fiat_balance < 10:
             return
 
-        if self._portfolio.query_crypto_balance(symbol).balance > 0:
-            return
-
         active_balances = self._portfolio.get_active_balances_count()
         available_balances = len(self._portfolio.crypto_balances) - active_balances
         investment = self._portfolio.fiat_balance / available_balances
@@ -119,7 +116,7 @@ class TraderBot:
             coins=float(receipt["executedQty"]),
             side=receipt["side"].lower(),
             type=receipt["type"].lower(),
-            time=receipt["transactTime"],
+            time=receipt["updateTime"],
             status=receipt["status"].lower()
         )
 
@@ -161,6 +158,7 @@ class TraderBot:
         """Activate the bot"""
         just_posted = False
         self._portfolio.fiat_balance = self.balance_request()
+        print(f"Current balance: {self._portfolio.fiat_balance}")
 
         while True:
             current_time = time.time()
@@ -190,9 +188,10 @@ class TraderBot:
                     if action is None:
                         continue
 
-                    price, crypto_coins = self.get_coins_to_trade(strategy=strategy, action=action)
-
-                    if crypto_coins is None:
+                    try:
+                        price, crypto_coins = self.get_coins_to_trade(strategy=strategy, action=action)
+                    except TypeError:
+                        print("There is no fiat in your account. No order will be place.")
                         continue
 
                     order_receipt = self.place_limit_order(symbol=strategy.symbol,
