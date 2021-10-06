@@ -22,7 +22,6 @@ class TrailingStopLoss:
         if price > self.__highest:
             self.__highest = price
             self.__trail = self.__highest * 0.95
-            self.__to_sql(update=True)
 
     def __to_sql(self, update=False):
         """Save a newly activated trailing stop loss"""

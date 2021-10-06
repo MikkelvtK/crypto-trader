@@ -107,4 +107,7 @@ class Strategy:
             return "sell"
 
         elif self._stop_loss:
-            self._stop_loss.adjust_stop_loss(price=price)
+            if self._stop_loss:
+                self._stop_loss.adjust_stop_loss(price=price)
+            else:
+                self._stop_loss = TrailingStopLoss(strategy_name=self._name, symbol=self._symbol, current_price=price)
