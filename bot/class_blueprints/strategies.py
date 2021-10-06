@@ -80,6 +80,9 @@ class Strategy:
             elif self._stop_loss:
                 self._stop_loss.adjust_stop_loss(price=price)
 
+            else:
+                return bull_data, "continue"
+
         elif data.df["EMA_50"].iloc[-1] < data.df["EMA_200"].iloc[-1]:
             self._market_state = "bear"
 
@@ -98,3 +101,6 @@ class Strategy:
 
             elif self._stop_loss:
                 self._stop_loss.adjust_stop_loss(price=price)
+
+            else:
+                return bear_data, "continue"

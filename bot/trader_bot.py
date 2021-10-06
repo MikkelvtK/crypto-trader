@@ -175,10 +175,15 @@ class TraderBot:
                         time.sleep(10)
                         just_posted = True
 
-                    data, action = strategy.check_for_signal()
+                    try:
+                        data, action = strategy.check_for_signal()
+                    except TypeError:
+                        print("Something went wrong. Continuing")
+                        continue
+
                     self.print_new_data(df=data.df, strategy=strategy)
 
-                    if action is None:
+                    if action == "continue":
                         continue
 
                     try:
