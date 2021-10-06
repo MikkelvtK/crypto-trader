@@ -75,10 +75,6 @@ class Strategy:
         return self._stop_loss
 
     # ----- CLASS METHODS ----- #
-
-    def query_open_trades(self, engine):
-
-
     def check_for_bull_market(self):
         """Check if current data gives off a buy or sell signal"""
         ma1_value = self._current_data_4h[f"SMA_{self.__ma1}"].iloc[-1]
