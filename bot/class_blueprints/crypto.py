@@ -48,6 +48,7 @@ class Crypto:
 
     # ----- CLASS METHODS ----- #
 
+    #TODO: Rework this more elegantly
     def balance_request(self, api):
         """Get float value of total balance (available and currently invested)"""
         for balance in api.get_balance()["balances"]:
@@ -82,6 +83,7 @@ class Crypto:
                 update = {"investment": self._investment, "balance": self._balance, "value": self._value}
                 con.query(CryptoBalance).filter_by(crypto=self.__crypto, fiat=self.__fiat).update(update)
 
+            #TODO: Rework this, it's never created
             else:
                 new_update = CryptoBalance(
                     crypto=self.__crypto,

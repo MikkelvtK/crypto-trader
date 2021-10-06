@@ -161,6 +161,8 @@ class TraderBot:
         just_posted = False
         self._portfolio.fiat_balance = self.balance_request()
         print(f"Current balance: {self._portfolio.fiat_balance}")
+
+        #TODO: Rework this more elegantly
         crypto = self._portfolio.query_crypto_balance("veteur")
         crypto.balance_request(api=self._api)
 
@@ -187,7 +189,7 @@ class TraderBot:
                                                          limit=50)
                         strategy.current_data_1h = new_data
                         self.print_new_data(df=strategy.current_data_1h, strategy=strategy)
-                        action = strategy.check_for_opportunity()
+                        action = strategy.check_for_opportunity(self._portfolio.query_crypto_balance(strategy.symbol))
 
                     if action is None:
                         continue

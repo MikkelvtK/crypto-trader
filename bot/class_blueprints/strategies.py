@@ -94,7 +94,7 @@ class Strategy:
         elif not self._bull_market:
             return "check for opportunity"
 
-    def check_for_opportunity(self):
+    def check_for_opportunity(self, crypto):
         rsi = self._current_data_1h["RSI"].iloc[-1]
         price = self._current_data_1h["Price"].iloc[-1]
 
@@ -106,7 +106,7 @@ class Strategy:
             self._stop_loss = None
             return "sell"
 
-        elif self._stop_loss:
+        elif crypto.balance > 10:
             if self._stop_loss:
                 self._stop_loss.adjust_stop_loss(price=price)
             else:
