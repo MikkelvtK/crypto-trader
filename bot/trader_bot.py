@@ -65,7 +65,7 @@ class TraderBot:
             return investment
 
     def get_coins_to_trade(self, strategy, action):
-        price = strategy.current_data["Price"].iloc[-1]
+        price = float(self._api.get_latest_price(strategy.symbol)["price"])
         rounded_price = self.get_correct_fractional_part(symbol=strategy.symbol, number=price)
 
         if action == "buy":
