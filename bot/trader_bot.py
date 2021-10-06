@@ -189,7 +189,7 @@ class TraderBot:
                                                          limit=50)
                         strategy.current_data_1h = new_data
                         self.print_new_data(df=strategy.current_data_1h, strategy=strategy)
-                        action = strategy.check_for_opportunity(self._portfolio.query_crypto_balance(strategy.symbol))
+                        action = strategy.check_for_opportunity()
 
                     if action is None:
                         continue
