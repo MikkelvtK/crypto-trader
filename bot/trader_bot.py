@@ -142,7 +142,7 @@ class TraderBot:
     @add_border
     def print_new_data(self, df, strategy):
         """Print new data result"""
-        message = f"RETRIEVING DATA FOR {strategy.symbol.upper()}"
+        message = f"CURRENT MARKET STATE FOR {strategy.symbol.upper()}: {strategy.market_state.upper()}"
         data = df.iloc[-1, :]
         return message, data
 
@@ -176,20 +176,8 @@ class TraderBot:
                         time.sleep(10)
                         just_posted = True
 
-                    new_data = self._api.get_history(symbol=strategy.symbol,
-                                                     interval=strategy.interval_4h,
-                                                     limit=200)
-                    strategy.current_data_4h = new_data
-                    self.print_new_data(df=strategy.current_data_4h, strategy=strategy)
-                    action = strategy.check_for_bull_market()
-
-                    if action == "check for opportunity":
-                        new_data = self._api.get_history(symbol=strategy.symbol,
-                                                         interval=strategy.interval_1h,
-                                                         limit=50)
-                        strategy.current_data_1h = new_data
-                        self.print_new_data(df=strategy.current_data_1h, strategy=strategy)
-                        action = strategy.check_for_opportunity()
+                    data, action = strategy.check_for_signal()
+                    self.print_new_data(df=data, strategy=strategy)
 
                     if action is None:
                         continue
