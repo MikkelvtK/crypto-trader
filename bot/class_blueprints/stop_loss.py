@@ -62,7 +62,6 @@ class TrailingStopLoss:
     def load(self):
         session = sessionmaker(self.__engine)
 
-        try:
             with session() as connection:
                 result = connection.query(StopLoss).filter_by(asset=self.__asset, open_stop_loss=True).first()
                 self.__index = result.index
@@ -70,8 +69,6 @@ class TrailingStopLoss:
                 self.__asset = result.asset
                 self.__highest = result.highest
                 self.__trail = result.trail
-        except AttributeError:
-            print("There is no active trailing stop loss. Open for business.")
 
     def query(self):
         session = sessionmaker(self.__engine)

@@ -16,8 +16,12 @@ class Strategy:
         self._current_data_4h = None
         self._current_data_1h = None
         self._bull_market = False
-        self._stop_loss = TrailingStopLoss()
-        self._stop_loss.load()
+
+        try:
+            self._stop_loss = TrailingStopLoss()
+            self._stop_loss.load()
+        except AttributeError:
+            self._stop_loss = None
 
     # ----- GETTERS / SETTERS ----- #
 
