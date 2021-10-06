@@ -64,7 +64,7 @@ class TrailingStopLoss:
 
         try:
             with session() as connection:
-                result = connection.query(StopLoss).filter_by(asset=self.__asset, open=True).first()
+                result = connection.query(StopLoss).filter_by(asset=self.__asset, open_stop_loss=True).first()
                 self.__index = result.index
                 self.__strategy_name = result.strategy_name
                 self.__asset = result.asset
