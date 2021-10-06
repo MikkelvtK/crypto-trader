@@ -3,6 +3,7 @@ from sqlalchemy import create_engine
 from class_blueprints.strategies import Strategy
 from class_blueprints.crypto import Crypto
 from trader_bot import TraderBot
+from class_blueprints.trader import TraderAPI
 
 
 def main():
@@ -10,16 +11,17 @@ def main():
 
     # Create all objects
     cryptos = [Crypto(crypto, config.FIAT_MARKET) for crypto in config.CRYPTOS]
+    api = TraderAPI()
 
     strategies = []
     for crypto in cryptos:
         crypto.from_sql(engine=engine)
         symbol = crypto.get_symbol()
-        strategy = Strategy(symbol=symbol, name="Golden Cross")
+        strategy = Strategy(symbol=symbol, name="Golden Cross", api=api)
         strategies.append(strategy)
 
     # Create bot object and activate it
-    bot = TraderBot(name=config.BOT_NAME, strategies=strategies, cryptos=cryptos)
+    bot = TraderBot(name=config.BOT_NAME, strategies=strategies, cryptos=cryptos, api=api)
     bot.activate()
 
 

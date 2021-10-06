@@ -3,17 +3,16 @@ import psutil
 import math
 from decorators import *
 from database import *
-from class_blueprints.trader import TraderAPI
 from class_blueprints.order import Order
 from class_blueprints.portfolio import Portfolio
 
 
 class TraderBot:
 
-    def __init__(self, name, strategies, cryptos):
+    def __init__(self, name, strategies, cryptos, api):
 
         self._name = name
-        self._api = TraderAPI()
+        self._api = api
         self._strategies = strategies
         self._portfolio = Portfolio(owner=config.USER,
                                     fiat=config.FIAT_MARKET,
