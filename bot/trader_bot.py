@@ -131,9 +131,11 @@ class TraderBot:
             coins = float(receipt["executedQty"]) * 0.999
             value = float(receipt["price"]) * coins
             crypto.update(investment=investment, balance=coins, value=value)
+            crypto.to_sql(engine=self.__engine)
         else:
             order.to_sql(engine=self.__engine, buy_order_id=order.get_last_buy_order(engine=self.__engine).order_id)
             crypto.update()
+            crypto.to_sql(engine=self.__engine)
 
     # ----- VISUAL FEEDBACK ----- #
 
@@ -159,6 +161,8 @@ class TraderBot:
         just_posted = False
         self._portfolio.fiat_balance = self.balance_request()
         print(f"Current balance: {self._portfolio.fiat_balance}")
+        crypto = self._portfolio.query_crypto_balance("veteur")
+        crypto.balance_request(api=self._api)
 
         while True:
             current_time = time.time()
