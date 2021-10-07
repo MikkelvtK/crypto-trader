@@ -73,16 +73,20 @@ class Strategy:
                 return bull_data, "buy"
 
             elif bull_data.df["EMA_9"].iloc[-1] < bull_data.df["EMA_20"].iloc[-1] and self._stop_loss:
-                if self._stop_loss.buy_price < price:
+                if price > self._stop_loss.buy_price:
                     self._stop_loss.close_stop_loss()
                     self._stop_loss = None
                     return bull_data, "sell"
 
-            elif self._stop_loss:
+                elif price < self._stop_loss.trail:
+                    self._stop_loss.close_stop_loss()
+                    self._stop_loss = None
+                    return bull_data, "sell"
+
+            if self._stop_loss:
                 self._stop_loss.adjust_stop_loss(price=price)
 
-            else:
-                return bull_data, "continue"
+            return bull_data, "continue"
 
         elif data.df["EMA_50"].iloc[-1] < data.df["EMA_200"].iloc[-1]:
             self._market_state = "bear"
@@ -101,7 +105,10 @@ class Strategy:
                 return bear_data, "sell"
 
             elif self._stop_loss:
+                if price < self._stop_loss.trail:
+                    self._stop_loss.close_stop_loss()
+                    self._stop_loss = None
+                    return bear_data, "sell"
                 self._stop_loss.adjust_stop_loss(price=price)
 
-            else:
-                return bear_data, "continue"
+            return bear_data, "continue"

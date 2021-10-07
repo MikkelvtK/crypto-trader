@@ -13,12 +13,16 @@ class TrailingStopLoss:
         self.__asset = None
         self._buy_price = None
         self.__highest = None
-        self.__trail = None
+        self._trail = None
         self.__open = True
 
     @property
     def buy_price(self):
         return self._buy_price
+
+    @property
+    def trail(self):
+        return self._trail
 
     # ----- CLASS METHODS ----- #
 
@@ -26,7 +30,7 @@ class TrailingStopLoss:
         """Adjust current highest point of the trailing stop loss if needed."""
         if price > self.__highest:
             self.__highest = price
-            self.__trail = self.__highest * 0.95
+            self._trail = self.__highest * 0.95
             self.__to_sql(update=True)
 
     def close_stop_loss(self):
@@ -41,7 +45,7 @@ class TrailingStopLoss:
             if update:
                 stop_loss = connection.query(StopLoss).get(self.__index)
                 stop_loss.highest = self.__highest
-                stop_loss.trail = self.__trail
+                stop_loss.trail = self._trail
                 stop_loss.open_stop_loss = self.__open
 
             else:
@@ -50,7 +54,7 @@ class TrailingStopLoss:
                     asset=self.__asset,
                     buy_price=self._buy_price,
                     highest=self.__highest,
-                    trail=self.__trail,
+                    trail=self._trail,
                     open_stop_loss=self.__open
                 )
 
@@ -64,7 +68,7 @@ class TrailingStopLoss:
         self.__asset = symbol
         self._buy_price = price
         self.__highest = price
-        self.__trail = self.__highest * 0.95
+        self._trail = self.__highest * 0.95
 
     def load(self):
         session = sessionmaker(self.__engine)
@@ -76,7 +80,7 @@ class TrailingStopLoss:
             self.__asset = result.asset
             self._buy_price = result.buy_price
             self.__highest = result.highest
-            self.__trail = result.trail
+            self._trail = result.trail
 
     def query(self):
         session = sessionmaker(self.__engine)
