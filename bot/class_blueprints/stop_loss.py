@@ -11,9 +11,14 @@ class TrailingStopLoss:
         self.__index = None
         self.__strategy_name = None
         self.__asset = None
+        self._buy_price = None
         self.__highest = None
         self.__trail = None
         self.__open = True
+
+    @property
+    def buy_price(self):
+        return self._buy_price
 
     # ----- CLASS METHODS ----- #
 
@@ -43,6 +48,7 @@ class TrailingStopLoss:
                 new_stop_loss = StopLoss(
                     strategy_name=self.__strategy_name,
                     asset=self.__asset,
+                    buy_price=self._buy_price,
                     highest=self.__highest,
                     trail=self.__trail,
                     open_stop_loss=self.__open
@@ -56,6 +62,7 @@ class TrailingStopLoss:
     def initialise(self, strategy_name, symbol, price):
         self.__strategy_name = strategy_name
         self.__asset = symbol
+        self._buy_price = price
         self.__highest = price
         self.__trail = self.__highest * 0.95
 
@@ -67,6 +74,7 @@ class TrailingStopLoss:
             self.__index = result.index
             self.__strategy_name = result.strategy_name
             self.__asset = result.asset
+            self._buy_price = result.buy_price
             self.__highest = result.highest
             self.__trail = result.trail
 

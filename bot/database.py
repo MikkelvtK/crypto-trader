@@ -12,6 +12,7 @@ class StopLoss(Base):
     index = Column(Integer, primary_key=True)
     strategy_name = Column(String(250), nullable=False)
     asset = Column(String(250), nullable=False)
+    buy_price = Column(Float, nullable=False)
     highest = Column(Float, nullable=False)
     trail = Column(Float, nullable=False)
     open_stop_loss = Column(Boolean, nullable=False)

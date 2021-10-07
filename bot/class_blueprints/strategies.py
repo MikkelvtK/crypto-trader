@@ -73,9 +73,10 @@ class Strategy:
                 return bull_data, "buy"
 
             elif bull_data.df["EMA_9"].iloc[-1] < bull_data.df["EMA_20"].iloc[-1] and self._stop_loss:
-                self._stop_loss.close_stop_loss()
-                self._stop_loss = None
-                return bull_data, "sell"
+                if self._stop_loss.buy_price < price:
+                    self._stop_loss.close_stop_loss()
+                    self._stop_loss = None
+                    return bull_data, "sell"
 
             elif self._stop_loss:
                 self._stop_loss.adjust_stop_loss(price=price)
