@@ -41,13 +41,13 @@ class Strategy:
 
     # ----- CLASS METHODS ----- #
     def _get_market_state_data(self):
-        new_data = Data(data=self._api.get_history(symbol=self._symbol, interval="4h", limit=250))
+        new_data = Data(data=self._api.get_history(symbol=self._symbol, interval="4h", limit=1000))
         new_data.set_ema(window=50)
         new_data.set_ema(window=200)
         return new_data
 
     def _get_bull_scenario_data(self):
-        new_data = Data(data=self._api.get_history(symbol=self._symbol, interval="15m", limit=50))
+        new_data = Data(data=self._api.get_history(symbol=self._symbol, interval="15m", limit=1000))
         new_data.set_ema(window=9)
         new_data.set_ema(window=20)
         return new_data
