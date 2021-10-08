@@ -30,4 +30,4 @@ class Data:
         self._df["RSI"] = pta.rsi(self._df["Price"], length=14)
 
     def set_ema(self, window):
-        self._df[f"EMA_{window}"] = pta.ema(self._df["Price"], length=window)
+        self._df[f"EMA_{window}"] = self._df["Price"].emw(span=window, adjust=False).mean()
