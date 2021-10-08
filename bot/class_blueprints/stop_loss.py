@@ -69,12 +69,13 @@ class TrailingStopLoss:
         self._buy_price = price
         self.__highest = price
         self._trail = self.__highest * 0.95
+        self.__to_sql(update=False)
 
-    def load(self):
+    def load(self, symbol):
         session = sessionmaker(self.__engine)
 
         with session() as connection:
-            result = connection.query(StopLoss).filter_by(asset=self.__asset, open_stop_loss=True).first()
+            result = connection.query(StopLoss).filter_by(asset=symbol, open_stop_loss=True).first()
             self.__index = result.index
             self.__strategy_name = result.strategy_name
             self.__asset = result.asset

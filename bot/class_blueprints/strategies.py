@@ -13,7 +13,7 @@ class Strategy:
 
         try:
             self._stop_loss = TrailingStopLoss()
-            self._stop_loss.load()
+            self._stop_loss.load(symbol=self._symbol)
         except AttributeError:
             print("No Active stop loss found.")
             self._stop_loss = None
