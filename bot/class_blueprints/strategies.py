@@ -15,6 +15,7 @@ class Strategy:
             self._stop_loss = TrailingStopLoss()
             self._stop_loss.load()
         except AttributeError:
+            print("No Active stop loss found.")
             self._stop_loss = None
 
     # ----- GETTERS / SETTERS ----- #
