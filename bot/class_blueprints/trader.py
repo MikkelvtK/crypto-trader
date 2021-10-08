@@ -123,7 +123,7 @@ class TraderAPI:
             "timestamp": ms_time,
         }
 
-        return requests.get(self.endpoint + request, params=params, headers=self.header)
+        return requests.delete(self.endpoint + request, params=params, headers=self.header)
 
 
 if __name__ == "__main__":

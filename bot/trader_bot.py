@@ -85,7 +85,7 @@ class TraderBot:
 
     # ----- PLACE ORDERS ----- #
 
-    def place_limit_order(self, price, symbol, action, crypto_coins):
+    def place_limit_order(self, price, symbol, action, crypto_coins, strategy):
         """Place limit order"""
 
         receipt = self._api.post_order(asset=symbol, action=action, order_type="limit", price=price,
@@ -100,6 +100,8 @@ class TraderBot:
                 time.sleep(5)
                 confirmation = self._api.query_order(asset_symbol=symbol, order_id=receipt["orderId"])
 
+        strategy.stop_loss.close_stop_loss()
+        strategy.stop_loss = None
         return self._api.cancel_orders(symbol=symbol)
 
     def process_order(self, receipt, strategy):

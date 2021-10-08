@@ -36,6 +36,10 @@ class Strategy:
     def stop_loss(self):
         return self._stop_loss
 
+    @stop_loss.setter
+    def stop_loss(self, action):
+        self._stop_loss = action
+
     @property
     def market_state(self):
         return self._market_state
