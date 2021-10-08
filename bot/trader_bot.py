@@ -128,7 +128,6 @@ class TraderBot:
             else:
                 order.to_sql(engine=self.__engine)
 
-            # 0.999 is for setting aside the commission few of Binance
             coins = float(receipt["executedQty"]) * 0.999
             value = float(receipt["price"]) * coins
             crypto.update(investment=investment, balance=coins, value=value)
@@ -194,8 +193,8 @@ class TraderBot:
                         print("There is no fiat in your account. No order will be place.")
                         continue
 
-                    order_receipt = self.place_limit_order(symbol=strategy.symbol,
-                                                           price=price, action=action, crypto_coins=crypto_coins)
+                    order_receipt = self.place_limit_order(symbol=strategy.symbol, price=price, action=action,
+                                                           crypto_coins=crypto_coins, strategy=strategy)
 
                     if order_receipt["status"].lower() == "filled":
                         self.process_order(receipt=order_receipt, strategy=strategy)
