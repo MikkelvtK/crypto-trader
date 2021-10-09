@@ -42,19 +42,19 @@ class Crypto:
 
     @value.setter
     def value(self, current_price):
-        if self.investment <= 0:
+        if self.investment < 0:
             raise Exception(self.__NO_INVESTMENT)
         self._value = self.balance * current_price
 
     # ----- CLASS METHODS ----- #
 
     def get_profit(self):
-        if self.investment <= 0:
+        if self.investment < 0:
             return self.__NO_INVESTMENT
         return self.value - self.investment
 
     def get_profit_ratio(self):
-        if self.investment <= 0:
+        if self.investment < 0:
             return self.__NO_INVESTMENT
         return (self.value - self.investment) / self.investment * 100
 

@@ -100,8 +100,9 @@ class TraderBot:
                 time.sleep(5)
                 confirmation = self._api.query_order(asset_symbol=symbol, order_id=receipt["orderId"])
 
-        strategy.stop_loss.close_stop_loss()
-        strategy.stop_loss = None
+        if action == "buy":
+            strategy.stop_loss.close_stop_loss()
+            strategy.stop_loss = None
         return self._api.cancel_orders(symbol=symbol)
 
     def process_order(self, receipt, strategy):
@@ -128,7 +129,7 @@ class TraderBot:
             else:
                 order.to_sql(engine=self.__engine)
 
-            coins = float(receipt["executedQty"]) * 0.999
+            coins = float(receipt["executedQty"])
             value = float(receipt["price"]) * coins
             crypto.update(investment=investment, balance=coins, value=value)
             crypto.to_sql(engine=self.__engine)
