@@ -1,3 +1,6 @@
+from functions import get_balance
+
+
 class Portfolio:
 
     def __init__(self, owner, fiat, cryptos, api):
@@ -36,9 +39,7 @@ class Portfolio:
 
     def update_portfolio(self, api):
         for symbol, crypto in self._crypto_balances.items():
-            for balance in api.get_balance()["balances"]:
-                if balance["asset"].lower() == crypto.crypto:
-                    crypto.balance = float(balance["free"])
+            crypto.balance = get_balance(currency=crypto.crypto, data=api.get_balance()["balances"])
 
     def query_crypto_balance(self, crypto):
         return self._crypto_balances[crypto]

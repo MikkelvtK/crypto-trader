@@ -1,5 +1,7 @@
 from class_blueprints.data import Data
 from class_blueprints.stop_loss import TrailingStopLoss
+from functions import get_balance
+import config
 
 
 class Strategy:
@@ -15,7 +17,18 @@ class Strategy:
             self._stop_loss = TrailingStopLoss()
             self._stop_loss.load(symbol=self._symbol)
         except AttributeError:
-            print("No Active stop loss found.")
+            print("No Active stop loss found. Checking balance.")
+            price = self._api.get_latest_price(asset=self._symbol)
+
+            for crypto in config.CRYPTOS:
+                if crypto in self._symbol:
+                    balance = get_balance(currency=crypto, data=self._api.get_balance()["balances"])
+                    if balance * price > 10:
+                        print("Substantial balance found. Setting trailing stop loss.")
+                        self._stop_loss = TrailingStopLoss()
+                        self._stop_loss.initialise(strategy_name=self._name, symbol=self._symbol, price=price)
+
+            print("No substantial balance found. Setting no trailing stop loss.")
             self._stop_loss = None
 
     # ----- GETTERS / SETTERS ----- #

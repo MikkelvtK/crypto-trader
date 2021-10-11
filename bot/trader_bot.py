@@ -5,6 +5,7 @@ from decorators import *
 from database import *
 from class_blueprints.order import Order
 from class_blueprints.portfolio import Portfolio
+from functions import get_balance
 
 
 class TraderBot:
@@ -40,12 +41,6 @@ class TraderBot:
         if step_size < 0:
             return math.floor(number)
         return math.floor(number * 10 ** step_size) / 10 ** step_size
-
-    def balance_request(self, currency):
-        """Get float value of total balance (available and currently invested)"""
-        for balance in self._api.get_balance()["balances"]:
-            if balance["asset"].lower() == currency:
-                return float(balance["free"])
 
     # ----- SETUP FOR ORDERS ----- #
 
@@ -112,8 +107,9 @@ class TraderBot:
 
     def process_order(self, receipt, strategy):
         crypto = self._portfolio.query_crypto_balance(receipt["symbol"].lower())
-        crypto.balance = self.balance_request(currency=crypto.crypto)
-        self._portfolio.fiat_balance = self.balance_request(currency=self._portfolio.fiat)
+        crypto.balance = get_balance(currency=crypto.crypto, data=self._api.get_balance()["balances"])
+        self._portfolio.fiat_balance = get_balance(currency=self._portfolio.fiat,
+                                                   data=self._api.get_balance()["balances"])
         investment = float(receipt["price"]) * float(receipt["executedQty"])
 
         order = Order(
@@ -163,7 +159,8 @@ class TraderBot:
         """Activate the bot"""
         just_posted = False
 
-        self._portfolio.fiat_balance = self.balance_request()
+        self._portfolio.fiat_balance = get_balance(currency=self._portfolio.fiat,
+                                                   data=self._api.get_balance()["balances"])
         print(f"Current balance: {round(self._portfolio.fiat_balance, 2)}.")
 
         for key, crypto in self._portfolio.crypto_balances.items():
