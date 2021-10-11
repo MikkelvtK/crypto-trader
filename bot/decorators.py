@@ -47,7 +47,7 @@ def check_response(func):
                     to_addrs=config.to_email,
                     msg=config.crash_mail_body
                 )
-            sys.exit(f"Something is wrong. Please fix the following issue:\n {response.text}")
+            raise Exception(f"Something is wrong. Please fix the following issue:\n {response.text}")
     return wrapper
 
 
