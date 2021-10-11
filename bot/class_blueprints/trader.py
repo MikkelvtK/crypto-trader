@@ -129,6 +129,19 @@ class TraderAPI:
         params["signature"] = signature
         return requests.delete(self.endpoint + request, params=params, headers=self.header)
 
+    @check_response
+    @connection_authenticator
+    def cancel_all_orders(self, symbol):
+        request = "/api/v3/openOrders"
+        ms_time = round(time.time() * 1000)
+
+        params = {
+            "symbol": symbol.upper(),
+            "timestamp": ms_time,
+        }
+
+        return requests.delete(self.endpoint + request, params=params, headers=self.header)
+
 
 if __name__ == "__main__":
     trader = TraderAPI()

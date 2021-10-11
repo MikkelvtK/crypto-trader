@@ -132,7 +132,10 @@ class TraderBot:
                 order.to_sql(engine=self.__engine)
 
         else:
-            order.to_sql(engine=self.__engine, buy_order_id=order.get_last_buy_order(engine=self.__engine).order_id)
+            buy_order = order.get_last_buy_order(engine=self.__engine)
+
+            if buy_order:
+                order.to_sql(engine=self.__engine, buy_order_id=buy_order.order_id)
 
     # ----- VISUAL FEEDBACK ----- #
 
@@ -159,12 +162,13 @@ class TraderBot:
         """Activate the bot"""
         just_posted = False
 
+        for key, crypto in self._portfolio.crypto_balances.items():
+            self._api.cancel_all_orders(symbol=crypto.get_symbol())
+            print(f"Current balance for {crypto.get_symbol()}: {crypto.balance}.")
+
         self._portfolio.fiat_balance = get_balance(currency=self._portfolio.fiat,
                                                    data=self._api.get_balance())
         print(f"Current balance: {round(self._portfolio.fiat_balance, 2)}.")
-
-        for key, crypto in self._portfolio.crypto_balances.items():
-            print(f"Current balance for {crypto.get_symbol()}: {crypto.balance}.")
 
         while True:
             current_time = time.time()
