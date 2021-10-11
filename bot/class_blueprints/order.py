@@ -103,6 +103,10 @@ class Order:
     def get_last_buy_order(self, engine):
         session = sessionmaker(engine)
 
-        with session() as connection:
-            buy_orders = connection.query(OrderRecord).filter_by(symbol=self._symbol, side="buy")
-            return buy_orders[-1]
+        try:
+            with session() as connection:
+                buy_orders = connection.query(OrderRecord).filter_by(symbol=self._symbol, side="buy")
+                return buy_orders[-1]
+
+        except IndexError:
+            print("No previous order found. Database must have been reset.")
