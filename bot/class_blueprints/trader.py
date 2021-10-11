@@ -115,7 +115,7 @@ class TraderAPI:
     @check_response
     @connection_authenticator
     def cancel_order(self, symbol, order_id):
-        request = "api/v3/openOrders"
+        request = "/api/v3/order "
         ms_time = round(time.time() * 1000)
 
         params = {
