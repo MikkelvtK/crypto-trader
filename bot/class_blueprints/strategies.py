@@ -18,7 +18,7 @@ class Strategy:
             self._stop_loss.load(symbol=self._symbol)
         except AttributeError:
             print("No Active stop loss found. Checking balance.")
-            price = self._api.get_latest_price(asset=self._symbol)
+            price = float(self._api.get_latest_price(asset=self._symbol)["price"])
 
             for crypto in config.CRYPTOS:
                 if crypto in self._symbol:
