@@ -103,7 +103,11 @@ class TraderBot:
         if action == "buy":
             strategy.stop_loss.close_stop_loss()
             strategy.stop_loss = None
-        return self._api.cancel_orders(symbol=symbol)
+
+        cancel = self._api.cancel_order(symbol=symbol, order_id=receipt["orderId"])
+
+        if cancel:
+            print("Limit order was not filled, order is cancelled.")
 
     def process_order(self, receipt, strategy):
         crypto = self._portfolio.query_crypto_balance(receipt["symbol"].lower())

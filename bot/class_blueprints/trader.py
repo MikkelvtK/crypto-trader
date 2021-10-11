@@ -114,15 +114,19 @@ class TraderAPI:
 
     @check_response
     @connection_authenticator
-    def cancel_orders(self, symbol):
+    def cancel_order(self, symbol, order_id):
         request = "api/v3/openOrders"
         ms_time = round(time.time() * 1000)
 
         params = {
             "symbol": symbol.upper(),
+            "orderId": order_id,
             "timestamp": ms_time,
         }
 
+        query_string = f"symbol={symbol}&orderId={order_id}&timestamp={ms_time}"
+        signature = hmac.new(self.secret.encode("utf-8"), query_string.encode("utf-8"), hashlib.sha256).hexdigest()
+        params["signature"] = signature
         return requests.delete(self.endpoint + request, params=params, headers=self.header)
 
 
