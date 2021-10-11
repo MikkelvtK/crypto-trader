@@ -140,6 +140,9 @@ class TraderAPI:
             "timestamp": ms_time,
         }
 
+        query_string = f"symbol={symbol}&timestamp={ms_time}"
+        signature = hmac.new(self.secret.encode("utf-8"), query_string.encode("utf-8"), hashlib.sha256).hexdigest()
+        params["signature"] = signature
         return requests.delete(self.endpoint + request, params=params, headers=self.header)
 
 
