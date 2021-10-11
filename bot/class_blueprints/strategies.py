@@ -12,24 +12,7 @@ class Strategy:
         self._api = api
         self._type = "hodl"
         self._market_state = None
-
-        try:
-            self._stop_loss = TrailingStopLoss()
-            self._stop_loss.load(symbol=self._symbol)
-        except AttributeError:
-            print("No Active stop loss found. Checking balance.")
-            price = float(self._api.get_latest_price(asset=self._symbol)["price"])
-
-            for crypto in config.CRYPTOS:
-                if crypto in self._symbol:
-                    balance = get_balance(currency=crypto, data=self._api.get_balance())
-                    if balance * price > 10:
-                        print("Substantial balance found. Setting trailing stop loss.")
-                        self._stop_loss = TrailingStopLoss()
-                        self._stop_loss.initialise(strategy_name=self._name, symbol=self._symbol, price=price)
-                    else:
-                        print("No substantial balance found. Setting no trailing stop loss.")
-                        self._stop_loss = None
+        self._stop_loss = self._set_stop_loss()
 
     # ----- GETTERS / SETTERS ----- #
 
@@ -52,6 +35,41 @@ class Strategy:
     @stop_loss.setter
     def stop_loss(self, action):
         self._stop_loss = action
+
+    def _set_stop_loss(self):
+        try:
+            stop_loss = TrailingStopLoss()
+            stop_loss.load(symbol=self._symbol)
+
+        except AttributeError:
+            print("No Active stop loss found. Checking balance.")
+            price = float(self._api.get_latest_price(asset=self._symbol)["price"])
+
+            for crypto in config.CRYPTOS:
+                if crypto in self._symbol:
+                    balance = get_balance(currency=crypto, data=self._api.get_balance())
+                    if balance * price > 10:
+                        print("Substantial balance found. Setting trailing stop loss.")
+                        stop_loss = TrailingStopLoss()
+                        stop_loss.initialise(strategy_name=self._name, symbol=self._symbol, price=price)
+                        return stop_loss
+                    else:
+                        print("No substantial balance found. Not setting trailing stop loss.")
+                        return None
+
+        else:
+            price = float(self._api.get_latest_price(asset=self._symbol)["price"])
+
+            for crypto in config.CRYPTOS:
+                if crypto in self._symbol:
+                    balance = get_balance(currency=crypto, data=self._api.get_balance())
+                    if balance * price < 10:
+                        print("Something must have gone wrong, no active trade was found. Closing stop loss and\n"
+                              "setting it to none.")
+                        stop_loss.close_stop_loss()
+                        return None
+
+            return stop_loss
 
     @property
     def market_state(self):
