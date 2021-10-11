@@ -16,7 +16,8 @@ class TraderBot:
         self._strategies = strategies
         self._portfolio = Portfolio(owner=config.USER,
                                     fiat=config.FIAT_MARKET,
-                                    cryptos=cryptos)
+                                    cryptos=cryptos,
+                                    api=self._api)
 
         self.__timer = 300
         self.__engine = sqlalchemy.create_engine(f"sqlite:///{config.db_path}")
@@ -40,15 +41,15 @@ class TraderBot:
             return math.floor(number)
         return math.floor(number * 10 ** step_size) / 10 ** step_size
 
-    def balance_request(self):
+    def balance_request(self, currency):
         """Get float value of total balance (available and currently invested)"""
         for balance in self._api.get_balance()["balances"]:
-            if balance["asset"].lower() == self._portfolio.fiat:
+            if balance["asset"].lower() == currency:
                 return float(balance["free"])
 
     # ----- SETUP FOR ORDERS ----- #
 
-    def get_investment_amount(self, symbol):
+    def get_investment_amount(self):
         """Checks if there is any available currency in current balance to invest"""
 
         if self._portfolio.fiat_balance < 10:
@@ -65,7 +66,7 @@ class TraderBot:
         rounded_price = self.get_correct_fractional_part(symbol=strategy.symbol, number=price)
 
         if action == "buy":
-            fiat_amount = self.get_investment_amount(strategy.symbol)
+            fiat_amount = self.get_investment_amount()
 
             if fiat_amount:
                 crypto_coins = fiat_amount / rounded_price
@@ -73,15 +74,15 @@ class TraderBot:
                                                                  number=crypto_coins, price=False)
                 if (rounded_coins * rounded_price) <= fiat_amount:
                     return rounded_price, rounded_coins
-                raise Exception("The limit order places an order higher than the given fiat amount.")
+                print("The limit order places an order higher than the given fiat amount.")
 
         elif action == "sell":
             crypto = self._portfolio.query_crypto_balance(crypto=strategy.symbol)
             crypto_coins = crypto.balance
             rounded_coins = self.get_correct_fractional_part(symbol=strategy.symbol, number=crypto_coins, price=False)
-            if crypto_coins == 0:
-                return
-            return rounded_price, rounded_coins
+            if rounded_coins * rounded_price >= 10:
+                return rounded_price, rounded_coins
+            print("The limit order places an order higher than the given fiat amount.")
 
     # ----- PLACE ORDERS ----- #
 
@@ -106,12 +107,13 @@ class TraderBot:
 
         cancel = self._api.cancel_order(symbol=symbol, order_id=receipt["orderId"])
 
-        if cancel:
+        if cancel["status"].lower() == "cancelled":
             print("Limit order was not filled, order is cancelled.")
 
     def process_order(self, receipt, strategy):
         crypto = self._portfolio.query_crypto_balance(receipt["symbol"].lower())
-        self._portfolio.fiat_balance = self.balance_request()
+        crypto.balance = self.balance_request(currency=crypto.crypto)
+        self._portfolio.fiat_balance = self.balance_request(currency=self._portfolio.fiat)
         investment = float(receipt["price"]) * float(receipt["executedQty"])
 
         order = Order(
@@ -133,14 +135,8 @@ class TraderBot:
             else:
                 order.to_sql(engine=self.__engine)
 
-            coins = float(receipt["executedQty"])
-            value = float(receipt["price"]) * coins
-            crypto.update(investment=investment, balance=coins, value=value)
-            crypto.to_sql(engine=self.__engine)
         else:
             order.to_sql(engine=self.__engine, buy_order_id=order.get_last_buy_order(engine=self.__engine).order_id)
-            crypto.update(investment=0, balance=0, value=0)
-            crypto.to_sql(engine=self.__engine)
 
     # ----- VISUAL FEEDBACK ----- #
 
@@ -152,12 +148,14 @@ class TraderBot:
         return message, data
 
     @add_border
-    def print_new_order(self, action, asset_symbol):
+    def print_new_order(self, action, symbol):
         """Print when order is placed"""
         new_balance = self._portfolio.fiat_balance
-        first_line = f"{action.upper()} ORDER PLACED FOR {asset_symbol.upper()}"
-        second_line = f"NEW BALANCE: {round(new_balance, 2)}"
-        return first_line, second_line
+        crypto = self._portfolio.query_crypto_balance(crypto=symbol)
+        first_line = f"{action.upper()} ORDER PLACED FOR {symbol.upper()}"
+        second_line = f"NEW FIAT BALANCE: {round(new_balance, 2)}"
+        third_line = f"NEW CRYPTO BALANCE: {round(crypto.balance, 2)}"
+        return first_line, second_line, third_line
 
     # ----- ON/OFF BUTTON ----- #
 

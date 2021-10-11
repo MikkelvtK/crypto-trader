@@ -1,10 +1,11 @@
 class Portfolio:
 
-    def __init__(self, owner, fiat, cryptos):
+    def __init__(self, owner, fiat, cryptos, api):
         self._owner = owner
         self._fiat = fiat
         self._fiat_balance = 0
         self._crypto_balances = {crypto.get_symbol(): crypto for crypto in cryptos}
+        self.update_portfolio(api=api)
 
     # ----- GETTERS / SETTERS ----- #
 
@@ -32,6 +33,12 @@ class Portfolio:
         return self._crypto_balances
 
     # ----- CLASS METHODS ----- #
+
+    def update_portfolio(self, api):
+        for symbol, crypto in self._crypto_balances.items():
+            for balance in api.get_balance()["balances"]:
+                if balance["asset"].lower() == crypto.crypto:
+                    crypto.balance = float(balance["free"])
 
     def query_crypto_balance(self, crypto):
         return self._crypto_balances[crypto]

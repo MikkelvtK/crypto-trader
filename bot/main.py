@@ -15,7 +15,6 @@ def main():
 
     strategies = []
     for crypto in cryptos:
-        crypto.from_sql(engine=engine)
         symbol = crypto.get_symbol()
         strategy = Strategy(symbol=symbol, name="Golden Cross", api=api)
         strategies.append(strategy)
