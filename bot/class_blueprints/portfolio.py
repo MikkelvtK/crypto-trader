@@ -44,11 +44,11 @@ class Portfolio:
     def query_crypto_balance(self, crypto):
         return self._crypto_balances[crypto]
 
-    def get_active_balances_count(self):
+    def get_active_balances_count(self, price):
         k = 0
 
         for symbol, crypto in self._crypto_balances.items():
-            if crypto.balance > 0:
+            if crypto.balance * price > 10:
                 k += 1
 
         return k

@@ -44,13 +44,13 @@ class TraderBot:
 
     # ----- SETUP FOR ORDERS ----- #
 
-    def get_investment_amount(self):
+    def get_investment_amount(self, price):
         """Checks if there is any available currency in current balance to invest"""
 
         if self._portfolio.fiat_balance < 10:
             return
 
-        active_balances = self._portfolio.get_active_balances_count()
+        active_balances = self._portfolio.get_active_balances_count(price=price)
         available_balances = len(self._portfolio.crypto_balances) - active_balances
         investment = self._portfolio.fiat_balance / available_balances
         if investment > 10:
@@ -61,7 +61,7 @@ class TraderBot:
         rounded_price = self.get_correct_fractional_part(symbol=strategy.symbol, number=price)
 
         if action == "buy":
-            fiat_amount = self.get_investment_amount()
+            fiat_amount = self.get_investment_amount(price=price)
 
             if fiat_amount:
                 crypto_coins = fiat_amount / rounded_price
