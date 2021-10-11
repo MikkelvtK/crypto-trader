@@ -163,7 +163,6 @@ class TraderBot:
         just_posted = False
 
         for key, crypto in self._portfolio.crypto_balances.items():
-            self._api.cancel_all_orders(symbol=crypto.get_symbol())
             print(f"Current balance for {crypto.get_symbol()}: {crypto.balance}.")
 
         self._portfolio.fiat_balance = get_balance(currency=self._portfolio.fiat,
