@@ -27,9 +27,9 @@ class Strategy:
                         print("Substantial balance found. Setting trailing stop loss.")
                         self._stop_loss = TrailingStopLoss()
                         self._stop_loss.initialise(strategy_name=self._name, symbol=self._symbol, price=price)
-
-            print("No substantial balance found. Setting no trailing stop loss.")
-            self._stop_loss = None
+                    else:
+                        print("No substantial balance found. Setting no trailing stop loss.")
+                        self._stop_loss = None
 
     # ----- GETTERS / SETTERS ----- #
 
