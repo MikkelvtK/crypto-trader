@@ -39,7 +39,7 @@ class Portfolio:
 
     def update_portfolio(self, api):
         for symbol, crypto in self._crypto_balances.items():
-            crypto.balance = get_balance(currency=crypto.crypto, data=api.get_balance()["balances"])
+            crypto.balance = get_balance(currency=crypto.crypto, data=api.get_balance())
 
     def query_crypto_balance(self, crypto):
         return self._crypto_balances[crypto]

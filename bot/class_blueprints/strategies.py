@@ -22,7 +22,7 @@ class Strategy:
 
             for crypto in config.CRYPTOS:
                 if crypto in self._symbol:
-                    balance = get_balance(currency=crypto, data=self._api.get_balance()["balances"])
+                    balance = get_balance(currency=crypto, data=self._api.get_balance())
                     if balance * price > 10:
                         print("Substantial balance found. Setting trailing stop loss.")
                         self._stop_loss = TrailingStopLoss()

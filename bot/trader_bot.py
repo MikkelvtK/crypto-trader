@@ -107,9 +107,9 @@ class TraderBot:
 
     def process_order(self, receipt, strategy):
         crypto = self._portfolio.query_crypto_balance(receipt["symbol"].lower())
-        crypto.balance = get_balance(currency=crypto.crypto, data=self._api.get_balance()["balances"])
+        crypto.balance = get_balance(currency=crypto.crypto, data=self._api.get_balance())
         self._portfolio.fiat_balance = get_balance(currency=self._portfolio.fiat,
-                                                   data=self._api.get_balance()["balances"])
+                                                   data=self._api.get_balance())
         investment = float(receipt["price"]) * float(receipt["executedQty"])
 
         order = Order(
@@ -160,7 +160,7 @@ class TraderBot:
         just_posted = False
 
         self._portfolio.fiat_balance = get_balance(currency=self._portfolio.fiat,
-                                                   data=self._api.get_balance()["balances"])
+                                                   data=self._api.get_balance())
         print(f"Current balance: {round(self._portfolio.fiat_balance, 2)}.")
 
         for key, crypto in self._portfolio.crypto_balances.items():
