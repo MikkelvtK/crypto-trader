@@ -61,7 +61,7 @@ class Crypto:
     def get_symbol(self):
         return self.__crypto + self.__fiat
 
-    def update(self, investment=0, balance=0, value=0):
+    def update(self, investment, balance, value):
         self.investment = investment
         self.balance = balance
         self.value = value

@@ -135,7 +135,7 @@ class TraderBot:
             crypto.to_sql(engine=self.__engine)
         else:
             order.to_sql(engine=self.__engine, buy_order_id=order.get_last_buy_order(engine=self.__engine).order_id)
-            crypto.update()
+            crypto.crypto.update(investment=0, balance=0, value=0)
             crypto.to_sql(engine=self.__engine)
 
     # ----- VISUAL FEEDBACK ----- #
