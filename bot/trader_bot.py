@@ -102,7 +102,7 @@ class TraderBot:
 
         cancel = self._api.cancel_order(symbol=symbol, order_id=receipt["orderId"])
 
-        if cancel["status"].lower() == "cancelled":
+        if cancel["status"].lower() == "canceled":
             print("Limit order was not filled, order is cancelled.")
 
     def process_order(self, receipt, strategy):
@@ -199,9 +199,10 @@ class TraderBot:
                     order_receipt = self.place_limit_order(symbol=strategy.symbol, price=price, action=action,
                                                            crypto_coins=crypto_coins, strategy=strategy)
 
-                    if order_receipt["status"].lower() == "filled":
-                        self.process_order(receipt=order_receipt, strategy=strategy)
-                        self.print_new_order(action, strategy.symbol)
+                    if order_receipt:
+                        if order_receipt["status"].lower() == "filled":
+                            self.process_order(receipt=order_receipt, strategy=strategy)
+                            self.print_new_order(action, strategy.symbol)
 
             if just_posted:
                 print(f"Current CPU usage: {psutil.cpu_percent(4)}.")
