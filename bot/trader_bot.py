@@ -6,6 +6,7 @@ from database import *
 from class_blueprints.order import Order
 from class_blueprints.portfolio import Portfolio
 from functions import get_balance
+from class_blueprints.stop_loss import TrailingStopLoss
 
 
 class TraderBot:
@@ -111,6 +112,15 @@ class TraderBot:
         self._portfolio.fiat_balance = get_balance(currency=self._portfolio.fiat,
                                                    data=self._api.get_balance())
         investment = float(receipt["price"]) * float(receipt["executedQty"])
+
+        if receipt["side"].lower() == "buy":
+            strategy.stop_loss = TrailingStopLoss()
+            strategy.stop_loss.initialise(strategy_name=strategy.name,
+                                          symbol=strategy.symbol,
+                                          price=float(receipt["price"]))
+        else:
+            strategy.stop_loss.close_stop_loss()
+            strategy.stop_loss = None
 
         order = Order(
             order_id=receipt["orderId"],

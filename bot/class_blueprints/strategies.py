@@ -104,19 +104,13 @@ class Strategy:
             price = bull_data.df["Price"].iloc[-1]
 
             if bull_data.df["EMA_9"].iloc[-1] > bull_data.df["EMA_20"].iloc[-1] and not self._stop_loss:
-                self._stop_loss = TrailingStopLoss()
-                self._stop_loss.initialise(strategy_name=self._name, symbol=self._symbol, price=price)
                 return bull_data, "buy"
 
             elif bull_data.df["EMA_9"].iloc[-1] < bull_data.df["EMA_20"].iloc[-1] and self._stop_loss:
-                self._stop_loss.close_stop_loss()
-                self._stop_loss = None
                 return bull_data, "sell"
 
             if self._stop_loss:
                 if price < self._stop_loss.trail:
-                    self._stop_loss.close_stop_loss()
-                    self._stop_loss = None
                     return bull_data, "sell"
                 self._stop_loss.adjust_stop_loss(price=price)
 
@@ -129,19 +123,13 @@ class Strategy:
             price = bear_data.df["Price"].iloc[-1]
 
             if bear_data.df["RSI"].iloc[-1] <= 30 and not self._stop_loss:
-                self._stop_loss = TrailingStopLoss()
-                self._stop_loss.initialise(strategy_name=self._name, symbol=self._symbol, price=price)
                 return bear_data, "buy"
 
             elif bear_data.df["RSI"].iloc[-1] >= 35 and self._stop_loss:
-                self._stop_loss.close_stop_loss()
-                self._stop_loss = None
                 return bear_data, "sell"
 
             if self._stop_loss:
                 if price < self._stop_loss.trail:
-                    self._stop_loss.close_stop_loss()
-                    self._stop_loss = None
                     return bear_data, "sell"
                 self._stop_loss.adjust_stop_loss(price=price)
 
