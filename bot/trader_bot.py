@@ -97,10 +97,6 @@ class TraderBot:
                 time.sleep(5)
                 confirmation = self._api.query_order(asset_symbol=symbol, order_id=receipt["orderId"])
 
-        if action == "buy":
-            strategy.stop_loss.close_stop_loss()
-            strategy.stop_loss = None
-
         cancel = self._api.cancel_order(symbol=symbol, order_id=receipt["orderId"])
 
         if cancel["status"].lower() == "canceled":
