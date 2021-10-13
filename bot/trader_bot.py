@@ -156,7 +156,7 @@ class TraderBot:
         crypto = self._portfolio.query_crypto_balance(crypto=symbol)
         first_line = f"{action.upper()} ORDER PLACED FOR {symbol.upper()}"
         second_line = f"NEW FIAT BALANCE: {round(new_balance, 2)}"
-        third_line = f"NEW CRYPTO BALANCE: {round(crypto.balance, 2)}"
+        third_line = f"NEW {crypto.crypto.upper()} BALANCE: {round(crypto.balance, 2)}"
         return first_line, second_line, third_line
 
     # ----- ON/OFF BUTTON ----- #
@@ -212,6 +212,9 @@ class TraderBot:
                             self.print_new_order(action, strategy.symbol)
 
             if just_posted:
+                print(f"Current fiat balance: {round(self._portfolio.fiat_balance, 2)} {self._portfolio.fiat.upper()}.")
+                for crypto in self._portfolio.crypto_balances:
+                    print(f"Current {crypto.crypto.upper()} balance: {round(crypto.balance)}.")
                 print(f"Current CPU usage: {psutil.cpu_percent(4)}.")
                 time.sleep(self.__timer - 60)
                 just_posted = False
