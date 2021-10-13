@@ -51,32 +51,6 @@ def check_response(func):
     return wrapper
 
 
-def add_border(func):
-    """Add a border to message"""
-    def wrapper(*args, **kwargs):
-        data = func(*args, **kwargs)
-
-        # Add border for each row in message
-        for i in range(len(data) + 1):
-            try:
-                text = data[i]
-            except IndexError:
-                text = ""
-
-            left_border = "<-----------------------"
-            right_border = ""
-
-            if isinstance(text, pd.Series):
-                print(text)
-            else:
-                while len(left_border + text + right_border) < 80:
-                    right_border += "-"
-
-                print(left_border + text + right_border + ">")
-
-    return wrapper
-
-
 def timer_decorator(func):
     @functools.wraps(func)
     def wrapper(*args, **kwargs):

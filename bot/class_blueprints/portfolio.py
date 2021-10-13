@@ -1,4 +1,4 @@
-from functions import get_balance
+from functions import get_balance, format_border
 
 
 class Portfolio:
@@ -53,3 +53,11 @@ class Portfolio:
 
         return k
 
+    def print_portfolio(self):
+        format_border(f"PORTFOLIO {self._owner.upper()}")
+
+        print(f"Current fiat balance: {round(self._fiat_balance, 2)} {self._fiat.upper()}.")
+        for symbol, crypto in self._crypto_balances.items():
+            print(f"Current {crypto.name.title()} balance: {crypto.balance}.")
+
+        format_border("")

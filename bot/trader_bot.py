@@ -5,7 +5,7 @@ from decorators import *
 from database import *
 from class_blueprints.order import Order
 from class_blueprints.portfolio import Portfolio
-from functions import get_balance
+from functions import get_balance, format_border
 from class_blueprints.stop_loss import TrailingStopLoss
 
 
@@ -153,22 +153,20 @@ class TraderBot:
 
     # ----- VISUAL FEEDBACK ----- #
 
-    @add_border
-    def print_new_data(self, df, strategy):
+    @staticmethod
+    def print_new_data(df, strategy):
         """Print new data result"""
-        message = f"CURRENT MARKET STATE FOR {strategy.symbol.upper()}: {strategy.market_state.upper()}"
-        data = df.iloc[-1, :]
-        return message, data
+        format_border(f"CURRENT MARKET STATE FOR {strategy.symbol.upper()}: {strategy.market_state.upper()}")
+        print(df.iloc[-1, :])
+        format_border("")
 
-    @add_border
     def print_new_order(self, action, symbol):
         """Print when order is placed"""
         new_balance = self._portfolio.fiat_balance
         crypto = self._portfolio.query_crypto_balance(crypto=symbol)
-        first_line = f"{action.upper()} ORDER PLACED FOR {symbol.upper()}"
-        second_line = f"NEW FIAT BALANCE: {round(new_balance, 2)}"
-        third_line = f"NEW {crypto.crypto.upper()} BALANCE: {round(crypto.balance, 2)}"
-        return first_line, second_line, third_line
+        format_border(f"{action.upper()} ORDER PLACED FOR {symbol.upper()}")
+        format_border(f"NEW FIAT BALANCE: {round(new_balance, 2)}")
+        format_border(f"NEW {crypto.crypto.upper()} BALANCE: {round(crypto.balance, 2)}")
 
     # ----- ON/OFF BUTTON ----- #
 
@@ -212,9 +210,7 @@ class TraderBot:
                             self.print_new_order(action, strategy.symbol)
 
             if just_posted:
-                print(f"Current fiat balance: {round(self._portfolio.fiat_balance, 2)} {self._portfolio.fiat.upper()}.")
-                for symbol, crypto in self._portfolio.crypto_balances.items():
-                    print(f"Current {crypto.crypto.upper()} balance: {crypto.balance}.")
+                self._api.print_portfolio()
                 print(f"Current CPU usage: {psutil.cpu_percent(4)}.")
                 time.sleep(self.__timer - 60)
                 just_posted = False

@@ -6,9 +6,10 @@ class Crypto:
 
     __NEGATIVE = "Number cannot be negative."
 
-    def __init__(self, crypto, fiat):
+    def __init__(self, crypto, fiat, name):
         self._crypto = crypto
         self.__fiat = fiat
+        self._name = name
         self._balance = 0
 
     # ----- GETTERS / SETTERS ----- #
@@ -16,6 +17,10 @@ class Crypto:
     @property
     def crypto(self):
         return self._crypto
+
+    @property
+    def name(self):
+        return self._name
 
     @property
     def balance(self):

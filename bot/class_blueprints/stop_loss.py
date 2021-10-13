@@ -30,7 +30,7 @@ class TrailingStopLoss:
         """Adjust current highest point of the trailing stop loss if needed."""
         if price > self.__highest:
             self.__highest = price
-            self._trail = self.__highest * 0.98
+            self._trail = self.__highest * 0.975
             self.__to_sql(update=True)
 
     def close_stop_loss(self):
@@ -68,7 +68,7 @@ class TrailingStopLoss:
         self.__asset = symbol
         self._buy_price = price
         self.__highest = price
-        self._trail = self.__highest * 0.98
+        self._trail = self.__highest * 0.975
         self.__to_sql(update=False)
 
     def load(self, symbol):

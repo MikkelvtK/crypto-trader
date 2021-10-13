@@ -10,7 +10,7 @@ def main():
     engine = create_engine(f"sqlite:///{config.db_path}")
 
     # Create all objects
-    cryptos = [Crypto(crypto, config.FIAT_MARKET) for crypto in config.CRYPTOS]
+    cryptos = [Crypto(key, config.FIAT_MARKET, value) for key, value in config.CRYPTOS.items()]
     api = TraderAPI()
 
     strategies = []
