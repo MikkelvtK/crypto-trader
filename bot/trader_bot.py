@@ -82,22 +82,33 @@ class TraderBot:
 
     # ----- PLACE ORDERS ----- #
 
-    def place_limit_order(self, price, symbol, action, crypto_coins, strategy):
+    def place_limit_order(self, symbol, action, strategy):
         """Place limit order"""
 
-        receipt = self._api.post_order(asset=symbol, action=action, order_type="limit", price=price,
-                                       quantity_type="quantity", amount=crypto_coins)
+        try:
+            price, crypto_coins = self.get_coins_to_trade(strategy=strategy, action=action)
 
-        confirmation = self._api.query_order(asset_symbol=symbol, order_id=receipt["orderId"])
+        except TypeError:
+            print("There is no fiat in your account. No order will be place.")
 
-        for _ in range(5):
-            if confirmation["status"].lower() == "filled":
-                return confirmation
-            else:
-                time.sleep(5)
-                confirmation = self._api.query_order(asset_symbol=symbol, order_id=receipt["orderId"])
+        else:
+            receipt = self._api.post_order(asset=symbol, action=action, order_type="limit", price=price,
+                                           quantity_type="quantity", amount=crypto_coins)
 
-        return self._api.cancel_order(symbol=symbol, order_id=receipt["orderId"])
+            confirmation = self._api.query_order(asset_symbol=symbol, order_id=receipt["orderId"])
+
+            for _ in range(2):
+                if confirmation["status"].lower() == "filled":
+                    return confirmation
+                else:
+                    time.sleep(5)
+                    confirmation = self._api.query_order(asset_symbol=symbol, order_id=receipt["orderId"])
+
+            order = self._api.cancel_order(symbol=symbol, order_id=receipt["orderId"])
+
+            if order["status"] == "canceled":
+                print("Limit order was not filled, order is cancelled. Will try again.")
+                return self.place_limit_order(symbol=symbol, action=action, strategy=strategy)
 
     def process_order(self, receipt, strategy):
         crypto = self._portfolio.query_crypto_balance(receipt["symbol"].lower())
@@ -193,27 +204,17 @@ class TraderBot:
                     if action == "continue":
                         continue
 
-                    try:
-                        price, crypto_coins = self.get_coins_to_trade(strategy=strategy, action=action)
-                    except TypeError:
-                        print("There is no fiat in your account. No order will be place.")
-                        continue
+                    order_receipt = self.place_limit_order(symbol=strategy.symbol, action=action, strategy=strategy)
 
-                    order_receipt = self.place_limit_order(symbol=strategy.symbol, price=price, action=action,
-                                                           crypto_coins=crypto_coins, strategy=strategy)
                     if order_receipt:
-                        if order_receipt["status"].lower() == "canceled":
-                            print("Limit order was not filled, order is cancelled.")
-                            continue
-
-                        elif order_receipt["status"].lower() == "filled":
+                        if order_receipt["status"].lower() == "filled":
                             self.process_order(receipt=order_receipt, strategy=strategy)
                             self.print_new_order(action, strategy.symbol)
 
             if just_posted:
                 print(f"Current fiat balance: {round(self._portfolio.fiat_balance, 2)} {self._portfolio.fiat.upper()}.")
                 for symbol, crypto in self._portfolio.crypto_balances.items():
-                    print(f"Current {crypto.crypto.upper()} balance: {round(crypto.balance)}.")
+                    print(f"Current {crypto.crypto.upper()} balance: {crypto.balance}.")
                 print(f"Current CPU usage: {psutil.cpu_percent(4)}.")
                 time.sleep(self.__timer - 60)
                 just_posted = False
