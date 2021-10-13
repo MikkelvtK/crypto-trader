@@ -212,7 +212,7 @@ class TraderBot:
 
             if just_posted:
                 print(f"Current fiat balance: {round(self._portfolio.fiat_balance, 2)} {self._portfolio.fiat.upper()}.")
-                for crypto in self._portfolio.crypto_balances:
+                for symbol, crypto in self._portfolio.crypto_balances.items():
                     print(f"Current {crypto.crypto.upper()} balance: {round(crypto.balance)}.")
                 print(f"Current CPU usage: {psutil.cpu_percent(4)}.")
                 time.sleep(self.__timer - 60)
