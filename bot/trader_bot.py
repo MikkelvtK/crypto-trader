@@ -94,7 +94,6 @@ class TraderBot:
         else:
             receipt = self._api.post_order(asset=symbol, action=action, order_type="limit", price=price,
                                            quantity_type="quantity", amount=crypto_coins)
-
             confirmation = self._api.query_order(asset_symbol=symbol, order_id=receipt["orderId"])
 
             for _ in range(2):

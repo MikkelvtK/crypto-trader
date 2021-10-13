@@ -55,9 +55,10 @@ class Portfolio:
 
     def print_portfolio(self):
         format_border(f"PORTFOLIO {self._owner.upper()}")
-
         print(f"\nCurrent fiat balance: {round(self._fiat_balance, 2)} {self._fiat.upper()}.")
-        for symbol, crypto in self._crypto_balances.items():
-            print(f"Current {crypto.name.title()} balance: {crypto.balance}.\n")
 
+        for symbol, crypto in self._crypto_balances.items():
+            print(f"Current {crypto.name.title()} balance: {crypto.balance}.")
+
+        print("")
         format_border("")
