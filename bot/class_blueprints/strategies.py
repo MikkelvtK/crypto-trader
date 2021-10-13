@@ -111,7 +111,7 @@ class Strategy:
                     return bull_data, "sell"
 
             if self._stop_loss:
-                if price < self._stop_loss.trail:
+                if price < self._stop_loss.trail and price < self._stop_loss.buy_price:
                     return bull_data, "sell"
                 self._stop_loss.adjust_stop_loss(price=price)
 
