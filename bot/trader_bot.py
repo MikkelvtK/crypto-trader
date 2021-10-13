@@ -210,7 +210,7 @@ class TraderBot:
                             self.print_new_order(action, strategy.symbol)
 
             if just_posted:
-                self._api.print_portfolio()
+                self._portfolio.print_portfolio()
                 print(f"Current CPU usage: {psutil.cpu_percent(4)}.")
                 time.sleep(self.__timer - 60)
                 just_posted = False
