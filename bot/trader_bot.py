@@ -216,9 +216,8 @@ class TraderBot:
                                 self.process_order(receipt=order_receipt, strategy=strategy)
                                 self.print_new_order(action, strategy.symbol)
 
-                    time.sleep(55)
-
             if just_posted:
-                time.sleep(55)
                 self._portfolio.print_portfolio()
                 just_posted = False
+
+            time.sleep(55)
