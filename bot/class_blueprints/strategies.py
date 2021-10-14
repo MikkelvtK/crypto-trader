@@ -84,8 +84,8 @@ class Strategy:
 
     def _get_bull_scenario_data(self):
         new_data = Data(data=self._api.get_history(symbol=self._symbol, interval="15m", limit=1000))
-        new_data.set_ema(window=9)
-        new_data.set_ema(window=20)
+        new_data.set_ema(window=8)
+        new_data.set_ema(window=21)
         return new_data
 
     def _get_bear_scenario_data(self):
@@ -112,10 +112,10 @@ class Strategy:
             bull_data = self._get_bull_scenario_data()
             price = bull_data.df["Price"].iloc[-1]
 
-            if bull_data.df["EMA_9"].iloc[-1] > bull_data.df["EMA_20"].iloc[-1] and not self._stop_loss:
+            if bull_data.df["EMA_8"].iloc[-1] > bull_data.df["EMA_21"].iloc[-1] and not self._stop_loss:
                 return bull_data, "buy"
 
-            elif bull_data.df["EMA_9"].iloc[-1] < bull_data.df["EMA_20"].iloc[-1] and self._stop_loss:
+            elif bull_data.df["EMA_8"].iloc[-1] < bull_data.df["EMA_21"].iloc[-1] and self._stop_loss:
                 if price > self._stop_loss.buy_price:
                     return bull_data, "sell"
 

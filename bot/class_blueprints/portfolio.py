@@ -1,4 +1,5 @@
 from functions import get_balance, format_border
+import psutil
 
 
 class Portfolio:
@@ -60,4 +61,4 @@ class Portfolio:
         for symbol, crypto in self._crypto_balances.items():
             print(f"Current {crypto.name.title()} balance: {crypto.balance}.")
 
-        print("")
+        print(f"Current CPU usage: {psutil.cpu_percent(4)}.\n")

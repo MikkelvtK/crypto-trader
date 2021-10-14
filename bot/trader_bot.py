@@ -1,5 +1,4 @@
 import sqlalchemy
-import psutil
 import math
 from decorators import *
 from database import *
@@ -156,7 +155,7 @@ class TraderBot:
     def print_new_data(df, strategy):
         """Print new data result"""
         format_border(f"CURRENT MARKET STATE FOR {strategy.symbol.upper()}: {strategy.market_state.upper()}")
-        print(df.iloc[-1, :])
+        print(f"\n{df.iloc[-1, :]}\n")
 
     def print_new_order(self, action, symbol):
         """Print when order is placed"""
@@ -210,7 +209,6 @@ class TraderBot:
 
                     self.print_new_data(df=data.df, strategy=strategy)
                     self._portfolio.print_portfolio()
-                    print(f"Current CPU usage: {psutil.cpu_percent(4)}.")
 
                     if action == "continue":
                         continue
