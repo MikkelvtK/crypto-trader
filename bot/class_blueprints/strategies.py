@@ -93,6 +93,15 @@ class Strategy:
         new_data.set_rsi()
         return new_data
 
+    def check_stop_loss(self):
+        price = self._api.get_latest_price(asset=self._symbol)
+
+        if self._stop_loss:
+            if price < self._stop_loss.trail and price < self._stop_loss.buy_price:
+                print("Trailing stop loss is triggered. Crypto will be sold.")
+                return "sell"
+            self._stop_loss.adjust_stop_loss(price=price)
+
     def check_for_signal(self):
         """Check if current data gives off a buy or sell signal"""
         data = self._get_market_state_data()
@@ -110,28 +119,17 @@ class Strategy:
                 if price > self._stop_loss.buy_price:
                     return bull_data, "sell"
 
-            elif self._stop_loss:
-                if price < self._stop_loss.trail and price < self._stop_loss.buy_price:
-                    return bull_data, "sell"
-                self._stop_loss.adjust_stop_loss(price=price)
-
             return bull_data, "continue"
 
         elif data.df["EMA_50"].iloc[-1] < data.df["EMA_200"].iloc[-1]:
             self._market_state = "bear"
 
             bear_data = self._get_bear_scenario_data()
-            price = bear_data.df["Price"].iloc[-1]
 
             if bear_data.df["RSI"].iloc[-1] <= 30 and not self._stop_loss:
                 return bear_data, "buy"
 
             elif bear_data.df["RSI"].iloc[-1] >= 35 and self._stop_loss:
                 return bear_data, "sell"
-
-            elif self._stop_loss:
-                if price < self._stop_loss.trail:
-                    return bear_data, "sell"
-                self._stop_loss.adjust_stop_loss(price=price)
 
             return bear_data, "continue"

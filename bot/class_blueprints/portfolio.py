@@ -61,4 +61,3 @@ class Portfolio:
             print(f"Current {crypto.name.title()} balance: {crypto.balance}.")
 
         print("")
-        format_border("")

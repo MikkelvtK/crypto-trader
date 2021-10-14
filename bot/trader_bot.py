@@ -21,7 +21,7 @@ class TraderBot:
                                     cryptos=cryptos,
                                     api=self._api)
 
-        self.__timer = 300
+        self.__timer = 900
         self.__engine = sqlalchemy.create_engine(f"sqlite:///{config.db_path}")
 
     # ----- HANDLING DATA ----- #
@@ -157,7 +157,6 @@ class TraderBot:
         """Print new data result"""
         format_border(f"CURRENT MARKET STATE FOR {strategy.symbol.upper()}: {strategy.market_state.upper()}")
         print(df.iloc[-1, :])
-        format_border("")
 
     def print_new_order(self, action, symbol):
         """Print when order is placed"""
@@ -185,9 +184,22 @@ class TraderBot:
 
             for strategy in self._strategies:
 
+                if -1 <= (current_time % 60) <= 1:
+                    if not just_posted:
+                        just_posted = True
+
+                    action = strategy.check_stop_loss()
+
+                    if action == "sell":
+                        order_receipt = self.place_limit_order(symbol=strategy.symbol, action=action, strategy=strategy)
+
+                        if order_receipt:
+                            if order_receipt["status"].lower() == "filled":
+                                self.process_order(receipt=order_receipt, strategy=strategy)
+                                self.print_new_order(action, strategy.symbol)
+
                 if -1 <= (current_time % self.__timer) <= 1:
                     if not just_posted:
-                        time.sleep(10)
                         just_posted = True
 
                     try:
@@ -197,6 +209,8 @@ class TraderBot:
                         continue
 
                     self.print_new_data(df=data.df, strategy=strategy)
+                    self._portfolio.print_portfolio()
+                    print(f"Current CPU usage: {psutil.cpu_percent(4)}.")
 
                     if action == "continue":
                         continue
@@ -209,7 +223,5 @@ class TraderBot:
                             self.print_new_order(action, strategy.symbol)
 
             if just_posted:
-                self._portfolio.print_portfolio()
-                print(f"Current CPU usage: {psutil.cpu_percent(4)}.")
-                time.sleep(self.__timer - 60)
+                time.sleep(55)
                 just_posted = False
