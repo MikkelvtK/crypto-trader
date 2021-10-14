@@ -215,9 +215,8 @@ class TraderBot:
                             if order_receipt["status"].lower() == "filled":
                                 self.process_order(receipt=order_receipt, strategy=strategy)
                                 self.print_new_order(action, strategy.symbol)
+                    time.sleep(55)
 
             if just_posted:
                 self._portfolio.print_portfolio()
                 just_posted = False
-
-            time.sleep(55)
