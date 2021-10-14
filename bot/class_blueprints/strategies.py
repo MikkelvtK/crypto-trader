@@ -94,7 +94,7 @@ class Strategy:
         return new_data
 
     def check_stop_loss(self):
-        price = self._api.get_latest_price(asset=self._symbol)
+        price = float(self._api.get_latest_price(asset=self._symbol)["price"])
 
         if self._stop_loss:
             if price < self._stop_loss.trail and price < self._stop_loss.buy_price:
