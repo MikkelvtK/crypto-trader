@@ -181,9 +181,8 @@ class TraderBot:
         while True:
             current_time = time.time()
 
-            for strategy in self._strategies:
-
-                if -1 <= (current_time % self.__timer) <= 1:
+            if -1 <= (current_time % self.__timer) <= 1:
+                for strategy in self._strategies:
                     if not just_posted:
                         just_posted = True
 
@@ -205,7 +204,10 @@ class TraderBot:
                             self.process_order(receipt=order_receipt, strategy=strategy)
                             self.print_new_order(action, strategy.symbol)
 
-                elif -0.5 <= (current_time % 60) <= 0.5:
+                self._portfolio.print_portfolio()
+
+            elif -0.5 <= (current_time % 60) <= 0.5:
+                for strategy in self._strategies:
                     if not just_posted:
                         just_posted = True
 
@@ -223,5 +225,4 @@ class TraderBot:
 
             if just_posted:
                 time.sleep(55)
-                self._portfolio.print_portfolio()
                 just_posted = False
