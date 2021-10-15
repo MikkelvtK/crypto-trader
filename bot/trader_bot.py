@@ -7,6 +7,7 @@ from class_blueprints.stop_loss import TrailingStopLoss
 from class_blueprints.trader import get_exchange_info, get_latest_price, post_order, query_order, cancel_order
 import os
 import config
+import sys
 
 
 class TraderBot:
@@ -103,8 +104,8 @@ class TraderBot:
                 order = cancel_order(symbol=symbol, order_id=receipt["orderId"])
 
             except BinanceAccountIssue:
-                print("Restarting bot. Please fix issue if it persists.")
                 os.system(config.command)
+                sys.exit("Restarting bot. Please fix issue if it persists.")
 
             else:
                 if order["status"] == "canceled":
