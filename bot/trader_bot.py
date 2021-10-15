@@ -168,8 +168,6 @@ class TraderBot:
         """Activate the bot"""
         just_posted = False
 
-        self._portfolio.update_portfolio()
-
         while True:
             current_time = time.time()
 

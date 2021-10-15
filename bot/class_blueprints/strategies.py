@@ -1,18 +1,16 @@
 from class_blueprints.data import Data
 from class_blueprints.stop_loss import TrailingStopLoss
-from functions import get_balance
-import config
+from class_blueprints.trader import get_balance, get_latest_price, get_history
 
 
 class Strategy:
 
-    def __init__(self, symbol, name, api):
+    def __init__(self, symbol, name, crypto):
         self._name = name
         self._symbol = symbol
-        self._api = api
         self._type = "hodl"
         self._market_state = None
-        self._stop_loss = self._set_stop_loss()
+        self._stop_loss = self.set_stop_loss(crypto=crypto)
 
     # ----- GETTERS / SETTERS ----- #
 
@@ -36,38 +34,32 @@ class Strategy:
     def stop_loss(self, action):
         self._stop_loss = action
 
-    def _set_stop_loss(self):
+    def set_stop_loss(self, crypto):
         try:
             stop_loss = TrailingStopLoss()
             stop_loss.load(symbol=self._symbol)
 
         except AttributeError:
             print("No Active stop loss found. Checking balance.")
-            price = float(self._api.get_latest_price(asset=self._symbol)["price"])
+            price = float(get_latest_price(asset=self._symbol)["price"])
 
-            for crypto in config.CRYPTOS:
-                if crypto in self._symbol:
-                    balance = get_balance(currency=crypto, data=self._api.get_balance())
-                    if balance * price > 10:
-                        print("Substantial balance found. Setting trailing stop loss.")
-                        stop_loss = TrailingStopLoss()
-                        stop_loss.initialise(strategy_name=self._name, symbol=self._symbol, price=price)
-                        return stop_loss
-                    else:
-                        print("No substantial balance found. Not setting trailing stop loss.")
-                        return None
+            if crypto.balance * price > 10:
+                print("Substantial balance found. Setting trailing stop loss.")
+                stop_loss = TrailingStopLoss()
+                stop_loss.initialise(strategy_name=self._name, symbol=self._symbol, price=price)
+                return stop_loss
+            else:
+                print("No substantial balance found. Not setting trailing stop loss.")
+                return None
 
         else:
-            price = float(self._api.get_latest_price(asset=self._symbol)["price"])
+            price = float(get_latest_price(asset=self._symbol)["price"])
 
-            for crypto in config.CRYPTOS:
-                if crypto in self._symbol:
-                    balance = get_balance(currency=crypto, data=self._api.get_balance())
-                    if balance * price < 10:
-                        print("Something must have gone wrong, no active trade was found. Closing stop loss and\n"
-                              "setting it to none.")
-                        stop_loss.close_stop_loss()
-                        return None
+            if crypto.balance * price < 10:
+                print("Something must have gone wrong, no active trade was found. Closing stop loss and\n"
+                      "setting it to none.")
+                stop_loss.close_stop_loss()
+                return None
 
             return stop_loss
 
@@ -77,24 +69,24 @@ class Strategy:
 
     # ----- CLASS METHODS ----- #
     def _get_market_state_data(self):
-        new_data = Data(data=self._api.get_history(symbol=self._symbol, interval="4h", limit=1000))
+        new_data = Data(data=get_history(symbol=self._symbol, interval="4h", limit=1000))
         new_data.set_ema(window=50)
         new_data.set_ema(window=200)
         return new_data
 
     def _get_bull_scenario_data(self):
-        new_data = Data(data=self._api.get_history(symbol=self._symbol, interval="15m", limit=1000))
+        new_data = Data(data=get_history(symbol=self._symbol, interval="15m", limit=1000))
         new_data.set_ema(window=8)
         new_data.set_ema(window=21)
         return new_data
 
     def _get_bear_scenario_data(self):
-        new_data = Data(data=self._api.get_history(symbol=self._symbol, interval="1h", limit=50))
+        new_data = Data(data=get_history(symbol=self._symbol, interval="1h", limit=50))
         new_data.set_rsi()
         return new_data
 
     def check_stop_loss(self):
-        price = float(self._api.get_latest_price(asset=self._symbol)["price"])
+        price = float(get_latest_price(asset=self._symbol)["price"])
 
         if self._stop_loss:
             if price < self._stop_loss.trail and price < self._stop_loss.buy_price:
