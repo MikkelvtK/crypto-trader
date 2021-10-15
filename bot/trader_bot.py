@@ -171,23 +171,19 @@ class TraderBot:
         """Activate the bot"""
         just_posted = False
 
-        for key, crypto in self._portfolio.crypto_balances.items():
-            print(f"Current balance for {crypto.get_symbol()}: {crypto.balance}.")
-
-        self._portfolio.fiat_balance = get_balance(currency=self._portfolio.fiat,
-                                                   data=self._api.get_balance())
-        print(f"Current balance: {round(self._portfolio.fiat_balance, 2)}.")
+        self._portfolio.fiat_balance = get_balance(currency=self._portfolio.fiat, data=self._api.get_balance())
 
         while True:
             current_time = time.time()
 
             if -1 <= (current_time % self.__timer) <= 1:
-                for strategy in self._strategies:
-                    if not just_posted:
-                        just_posted = True
+                if not just_posted:
+                    just_posted = True
 
+                for strategy in self._strategies:
                     try:
                         data, action = strategy.check_for_signal()
+
                     except TypeError:
                         print("Something went wrong. Continuing")
                         continue
@@ -207,16 +203,14 @@ class TraderBot:
                 self._portfolio.print_portfolio()
 
             elif -0.5 <= (current_time % 60) <= 0.5:
-                for strategy in self._strategies:
-                    if not just_posted:
-                        just_posted = True
+                if not just_posted:
+                    just_posted = True
 
+                for strategy in self._strategies:
                     action = strategy.check_stop_loss()
 
                     if action == "sell":
-                        order_receipt = self.place_limit_order(symbol=strategy.symbol,
-                                                               action=action,
-                                                               strategy=strategy)
+                        order_receipt = self.place_limit_order(symbol=strategy.symbol, action=action, strategy=strategy)
 
                         if order_receipt:
                             if order_receipt["status"].lower() == "filled":
