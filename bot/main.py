@@ -13,8 +13,7 @@ def main():
 
     strategies = []
     for symbol, crypto in portfolio.crypto_balances.items():
-        strategy = Strategy(symbol=symbol, name="Golden Cross", )
-        strategy.set_stop_loss()
+        strategy = Strategy(symbol=symbol, name="Golden Cross", crypto=crypto)
         strategies.append(strategy)
 
     # Create bot object and activate it

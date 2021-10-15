@@ -3,7 +3,6 @@ import math
 from decorators import *
 from database import *
 from class_blueprints.order import Order
-from class_blueprints.portfolio import Portfolio
 from functions import format_border
 from class_blueprints.stop_loss import TrailingStopLoss
 from class_blueprints.trader import get_exchange_info, get_latest_price, post_order, query_order, cancel_order
@@ -11,14 +10,11 @@ from class_blueprints.trader import get_exchange_info, get_latest_price, post_or
 
 class TraderBot:
 
-    def __init__(self, name, strategies, cryptos):
+    def __init__(self, name, strategies, portfolio):
 
         self._name = name
         self._strategies = strategies
-        self._portfolio = Portfolio(owner=config.USER,
-                                    fiat=config.FIAT_MARKET,
-                                    cryptos=cryptos)
-
+        self._portfolio = portfolio
         self.__timer = 900
         self.__engine = sqlalchemy.create_engine(f"sqlite:///{config.db_path}")
 

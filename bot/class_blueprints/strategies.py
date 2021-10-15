@@ -10,7 +10,7 @@ class Strategy:
         self._symbol = symbol
         self._type = "hodl"
         self._market_state = None
-        self._stop_loss = self.set_stop_loss(crypto=crypto)
+        self._stop_loss = self._set_stop_loss(crypto=crypto)
 
     # ----- GETTERS / SETTERS ----- #
 
@@ -34,7 +34,7 @@ class Strategy:
     def stop_loss(self, action):
         self._stop_loss = action
 
-    def set_stop_loss(self, crypto):
+    def _set_stop_loss(self, crypto):
         try:
             stop_loss = TrailingStopLoss()
             stop_loss.load(symbol=self._symbol)
