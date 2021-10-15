@@ -5,6 +5,7 @@ from class_blueprints.order import Order
 from functions import format_border
 from class_blueprints.stop_loss import TrailingStopLoss
 from class_blueprints.trader import get_exchange_info, get_latest_price, post_order, query_order, cancel_order
+from class_blueprints.trader import cancel_all_orders
 import os
 import config
 import sys
@@ -171,6 +172,12 @@ class TraderBot:
     def activate(self):
         """Activate the bot"""
         just_posted = False
+
+        for symbol, crypto in self._portfolio.items():
+            try:
+                cancel_all_orders(symbol=symbol)
+            except BinanceAccountIssue:
+                print(f"There are no orders to cancel for {symbol.upper()}.")
 
         while True:
             current_time = time.time()
