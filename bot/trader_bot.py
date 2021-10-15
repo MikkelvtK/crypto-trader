@@ -173,7 +173,7 @@ class TraderBot:
         """Activate the bot"""
         just_posted = False
 
-        for symbol, crypto in self._portfolio.items():
+        for symbol, crypto in self._portfolio.crypto_balances.items():
             try:
                 cancel_all_orders(symbol=symbol)
             except BinanceAccountIssue:
