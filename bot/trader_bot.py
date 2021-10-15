@@ -1,11 +1,12 @@
 import sqlalchemy
 import math
 from decorators import *
-from database import *
 from class_blueprints.order import Order
 from functions import format_border
 from class_blueprints.stop_loss import TrailingStopLoss
 from class_blueprints.trader import get_exchange_info, get_latest_price, post_order, query_order, cancel_order
+import os
+import config
 
 
 class TraderBot:
@@ -55,6 +56,7 @@ class TraderBot:
     def get_coins_to_trade(self, strategy, action):
         price = float(get_latest_price(strategy.symbol)["price"])
         rounded_price = self.get_correct_fractional_part(symbol=strategy.symbol, number=price)
+        crypto = self._portfolio.query_crypto_balance(crypto=strategy.symbol)
 
         if action == "buy":
             fiat_amount = self.get_investment_amount(price=price)
@@ -68,7 +70,6 @@ class TraderBot:
                 print("The limit order places an order higher than the given fiat amount.")
 
         elif action == "sell":
-            crypto = self._portfolio.query_crypto_balance(crypto=strategy.symbol)
             crypto_coins = crypto.balance
             rounded_coins = self.get_correct_fractional_part(symbol=strategy.symbol, number=crypto_coins, price=False)
             if rounded_coins * rounded_price >= 10:
@@ -87,22 +88,28 @@ class TraderBot:
             print("There is no fiat in your account. No order will be place.")
 
         else:
-            receipt = post_order(asset=symbol, action=action, order_type="limit", price=price,
-                                 quantity_type="quantity", amount=crypto_coins)
-            confirmation = query_order(asset_symbol=symbol, order_id=receipt["orderId"])
+            try:
+                receipt = post_order(asset=symbol, action=action, order_type="limit", price=price,
+                                     quantity_type="quantity", amount=crypto_coins)
+                confirmation = query_order(asset_symbol=symbol, order_id=receipt["orderId"])
 
-            for _ in range(2):
-                if confirmation["status"].lower() == "filled":
-                    return confirmation
-                else:
-                    time.sleep(5)
-                    confirmation = query_order(asset_symbol=symbol, order_id=receipt["orderId"])
+                for _ in range(2):
+                    if confirmation["status"].lower() == "filled":
+                        return confirmation
+                    else:
+                        time.sleep(5)
+                        confirmation = query_order(asset_symbol=symbol, order_id=receipt["orderId"])
 
-            order = cancel_order(symbol=symbol, order_id=receipt["orderId"])
+                order = cancel_order(symbol=symbol, order_id=receipt["orderId"])
 
-            if order["status"] == "canceled":
-                print("Limit order was not filled, order is cancelled. Will try again.")
-                return self.place_limit_order(symbol=symbol, action=action, strategy=strategy)
+            except BinanceAccountIssue:
+                print("Restarting bot. Please fix issue if it persists.")
+                os.system(config.command)
+
+            else:
+                if order["status"] == "canceled":
+                    print("Limit order was not filled, order is cancelled. Will try again.")
+                    return self.place_limit_order(symbol=symbol, action=action, strategy=strategy)
 
     def process_order(self, receipt, strategy):
         self._portfolio.update_portfolio()

@@ -5,7 +5,7 @@ import time
 import functools
 import config
 import smtplib
-import pandas as pd
+from class_blueprints.exceptions import BinanceAccountIssue
 
 
 def connection_authenticator(func):
@@ -45,9 +45,9 @@ def check_response(func):
                 connection.sendmail(
                     from_addr=config.my_email,
                     to_addrs=config.to_email,
-                    msg=config.crash_mail_body
+                    msg=f"{config.crash_mail_body} \n\nPs. Please fix the following issue:\n {response.text}."
                 )
-            raise Exception(f"Something is wrong. Please fix the following issue:\n {response.text}")
+            raise BinanceAccountIssue
     return wrapper
 
 

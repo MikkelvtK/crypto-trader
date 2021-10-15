@@ -86,9 +86,9 @@ class Strategy:
         return new_data
 
     def check_stop_loss(self):
-        price = float(get_latest_price(asset=self._symbol)["price"])
-
         if self._stop_loss:
+            price = float(get_latest_price(asset=self._symbol)["price"])
+
             if price < self._stop_loss.trail and price < self._stop_loss.buy_price:
                 print("Trailing stop loss is triggered. Crypto will be sold.")
                 return "sell"
