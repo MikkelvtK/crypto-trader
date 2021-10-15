@@ -40,7 +40,7 @@ class Portfolio:
     # ----- CLASS METHODS ----- #
 
     def update_portfolio(self):
-        data = get_balance()["balances"]
+        data = get_balance()
 
         for balance in data["balances"]:
             if balance["asset"].lower() == self._fiat:
