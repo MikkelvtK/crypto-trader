@@ -4,30 +4,30 @@ from decorators import *
 from database import *
 from class_blueprints.order import Order
 from class_blueprints.portfolio import Portfolio
-from functions import get_balance, format_border
+from functions import format_border
 from class_blueprints.stop_loss import TrailingStopLoss
+from class_blueprints.trader import get_exchange_info, get_latest_price, post_order, query_order, cancel_order
 
 
 class TraderBot:
 
-    def __init__(self, name, strategies, cryptos, api):
+    def __init__(self, name, strategies, cryptos):
 
         self._name = name
-        self._api = api
         self._strategies = strategies
         self._portfolio = Portfolio(owner=config.USER,
                                     fiat=config.FIAT_MARKET,
-                                    cryptos=cryptos,
-                                    api=self._api)
+                                    cryptos=cryptos)
 
         self.__timer = 900
         self.__engine = sqlalchemy.create_engine(f"sqlite:///{config.db_path}")
 
     # ----- HANDLING DATA ----- #
 
-    def get_correct_fractional_part(self, symbol, number, price=True):
+    @staticmethod
+    def get_correct_fractional_part(symbol, number, price=True):
         """Get the step size for crypto currencies used by the _api"""
-        symbol_info = self._api.get_exchange_info(symbol)["symbols"][0]
+        symbol_info = get_exchange_info(symbol)["symbols"][0]
 
         if price:
             lot_size_filter = symbol_info["filters"][0]
@@ -57,7 +57,7 @@ class TraderBot:
             return investment
 
     def get_coins_to_trade(self, strategy, action):
-        price = float(self._api.get_latest_price(strategy.symbol)["price"])
+        price = float(get_latest_price(strategy.symbol)["price"])
         rounded_price = self.get_correct_fractional_part(symbol=strategy.symbol, number=price)
 
         if action == "buy":
@@ -91,28 +91,25 @@ class TraderBot:
             print("There is no fiat in your account. No order will be place.")
 
         else:
-            receipt = self._api.post_order(asset=symbol, action=action, order_type="limit", price=price,
-                                           quantity_type="quantity", amount=crypto_coins)
-            confirmation = self._api.query_order(asset_symbol=symbol, order_id=receipt["orderId"])
+            receipt = post_order(asset=symbol, action=action, order_type="limit", price=price,
+                                 quantity_type="quantity", amount=crypto_coins)
+            confirmation = query_order(asset_symbol=symbol, order_id=receipt["orderId"])
 
             for _ in range(2):
                 if confirmation["status"].lower() == "filled":
                     return confirmation
                 else:
                     time.sleep(5)
-                    confirmation = self._api.query_order(asset_symbol=symbol, order_id=receipt["orderId"])
+                    confirmation = query_order(asset_symbol=symbol, order_id=receipt["orderId"])
 
-            order = self._api.cancel_order(symbol=symbol, order_id=receipt["orderId"])
+            order = cancel_order(symbol=symbol, order_id=receipt["orderId"])
 
             if order["status"] == "canceled":
                 print("Limit order was not filled, order is cancelled. Will try again.")
                 return self.place_limit_order(symbol=symbol, action=action, strategy=strategy)
 
     def process_order(self, receipt, strategy):
-        crypto = self._portfolio.query_crypto_balance(receipt["symbol"].lower())
-        crypto.balance = get_balance(currency=crypto.crypto, data=self._api.get_balance())
-        self._portfolio.fiat_balance = get_balance(currency=self._portfolio.fiat,
-                                                   data=self._api.get_balance())
+        self._portfolio.update_portfolio()
         investment = float(receipt["price"]) * float(receipt["executedQty"])
 
         if receipt["side"].lower() == "buy":
@@ -171,7 +168,7 @@ class TraderBot:
         """Activate the bot"""
         just_posted = False
 
-        self._portfolio.fiat_balance = get_balance(currency=self._portfolio.fiat, data=self._api.get_balance())
+        self._portfolio.update_portfolio()
 
         while True:
             current_time = time.time()

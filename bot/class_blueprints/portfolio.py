@@ -1,15 +1,16 @@
-from functions import get_balance, format_border
+from functions import format_border
+from class_blueprints.trader import get_balance
 import psutil
 
 
 class Portfolio:
 
-    def __init__(self, owner, fiat, cryptos, api):
+    def __init__(self, owner, fiat, cryptos):
         self._owner = owner
         self._fiat = fiat
         self._fiat_balance = 0
         self._crypto_balances = {crypto.get_symbol(): crypto for crypto in cryptos}
-        self.update_portfolio(api=api)
+        self.update_portfolio()
 
     # ----- GETTERS / SETTERS ----- #
 
@@ -38,9 +39,15 @@ class Portfolio:
 
     # ----- CLASS METHODS ----- #
 
-    def update_portfolio(self, api):
+    def update_portfolio(self):
+        data = get_balance()["balances"]
+
+        for balance in data["balances"]:
+            if balance["asset"].lower() == self._fiat:
+                self._fiat_balance = float(balance["free"])
+
         for symbol, crypto in self._crypto_balances.items():
-            crypto.balance = get_balance(currency=crypto.crypto, data=api.get_balance())
+            crypto.update_balance(data=data)
 
     def query_crypto_balance(self, crypto):
         return self._crypto_balances[crypto]

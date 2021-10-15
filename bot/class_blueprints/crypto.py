@@ -36,3 +36,8 @@ class Crypto:
 
     def get_symbol(self):
         return self._crypto + self.__fiat
+
+    def update_balance(self, data):
+        for balance in data["balances"]:
+            if balance["asset"].lower() == self._crypto:
+                self._balance = float(balance["free"])
