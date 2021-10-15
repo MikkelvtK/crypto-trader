@@ -35,7 +35,7 @@ def get_balance():
 
     # Create hashed signature
     query_string = f"timestamp={ms_time}"
-    signature = hmac.new(config.secret.encode("utf-8"), query_string.encode("utf-8"), hashlib.sha256).hexdigest()
+    signature = hmac.new(config.apiSecret.encode("utf-8"), query_string.encode("utf-8"), hashlib.sha256).hexdigest()
 
     params = {
         "timestamp": ms_time,
@@ -76,7 +76,7 @@ def post_order(**kwargs):
         query_string = f"symbol={asset}&side={side}&type={order_type}&" \
                        f"{quantity_type}={amount}&timestamp={ms_time}"
 
-    signature = hmac.new(config.secret.encode("utf-8"), query_string.encode("utf-8"), hashlib.sha256).hexdigest()
+    signature = hmac.new(config.apiSecret.encode("utf-8"), query_string.encode("utf-8"), hashlib.sha256).hexdigest()
     params["signature"] = signature
     return requests.post(endpoint, params=params, headers=config.header)
 
@@ -101,7 +101,7 @@ def query_order(asset_symbol, order_id):
     }
 
     query_string = f"symbol={symbol}&orderId={order_id}&timestamp={ms_time}"
-    signature = hmac.new(config.secret.encode("utf-8"), query_string.encode("utf-8"), hashlib.sha256).hexdigest()
+    signature = hmac.new(config.apiSecret.encode("utf-8"), query_string.encode("utf-8"), hashlib.sha256).hexdigest()
     params["signature"] = signature
     return requests.get(endpoint, params=params, headers=config.header)
 
@@ -118,7 +118,7 @@ def cancel_order(symbol, order_id):
     }
 
     query_string = f"symbol={symbol.upper()}&orderId={order_id}&timestamp={ms_time}"
-    signature = hmac.new(config.secret.encode("utf-8"), query_string.encode("utf-8"), hashlib.sha256).hexdigest()
+    signature = hmac.new(config.apiSecret.encode("utf-8"), query_string.encode("utf-8"), hashlib.sha256).hexdigest()
     params["signature"] = signature
     return requests.delete(endpoint, params=params, headers=config.header)
 
@@ -134,6 +134,6 @@ def cancel_all_orders(symbol):
     }
 
     query_string = f"symbol={symbol.upper()}&timestamp={ms_time}"
-    signature = hmac.new(config.secret.encode("utf-8"), query_string.encode("utf-8"), hashlib.sha256).hexdigest()
+    signature = hmac.new(config.apiSecret.encode("utf-8"), query_string.encode("utf-8"), hashlib.sha256).hexdigest()
     params["signature"] = signature
     return requests.delete(endpoint, params=params, headers=config.header)
