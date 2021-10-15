@@ -133,4 +133,7 @@ def cancel_all_orders(symbol):
         "timestamp": ms_time,
     }
 
+    query_string = f"symbol={symbol}&timestamp={ms_time}"
+    signature = hmac.new(config.apiSecret.encode("utf-8"), query_string.encode("utf-8"), hashlib.sha256).hexdigest()
+    params["signature"] = signature
     return requests.delete(endpoint, params=params, headers=config.header)
