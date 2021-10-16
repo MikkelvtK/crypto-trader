@@ -9,8 +9,13 @@ class Strategy:
         self._name = name
         self._symbol = symbol
         self._type = "hodl"
-        self._market_state = None
         self._stop_loss = self._set_stop_loss(crypto=crypto)
+
+        data = self._get_market_state_data()
+        if data.df["EMA_50"].iloc[-1] > data.df["EMA_200"].iloc[-1]:
+            self._market_state = "bull"
+        else:
+            self._market_state = "bear"
 
     # ----- GETTERS / SETTERS ----- #
 
