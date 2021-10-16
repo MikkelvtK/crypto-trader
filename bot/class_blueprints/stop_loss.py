@@ -13,6 +13,7 @@ class TrailingStopLoss:
         self.__asset = None
         self._buy_price = None
         self.__highest = None
+        self.__trail_ratio = None
         self._trail = None
         self.__open = True
 
@@ -30,7 +31,7 @@ class TrailingStopLoss:
         """Adjust current highest point of the trailing stop loss if needed."""
         if price > self.__highest:
             self.__highest = price
-            self._trail = self.__highest * 0.98
+            self._trail = self.__highest * self.__trail_ratio
             self.__to_sql(update=True)
 
     def close_stop_loss(self):
@@ -54,6 +55,7 @@ class TrailingStopLoss:
                     asset=self.__asset,
                     buy_price=self._buy_price,
                     highest=self.__highest,
+                    trail_ratio=self.__trail_ratio,
                     trail=self._trail,
                     open_stop_loss=self.__open
                 )
@@ -63,12 +65,13 @@ class TrailingStopLoss:
 
             connection.commit()
 
-    def initialise(self, strategy_name, symbol, price):
+    def initialise(self, strategy_name, symbol, price, trail_ratio):
         self.__strategy_name = strategy_name
         self.__asset = symbol
         self._buy_price = price
         self.__highest = price
-        self._trail = self.__highest * 0.98
+        self.__trail_ratio = trail_ratio
+        self._trail = self.__highest * self.__trail_ratio
         self.__to_sql(update=False)
 
     def load(self, symbol):
@@ -81,6 +84,7 @@ class TrailingStopLoss:
             self.__asset = result.asset
             self._buy_price = result.buy_price
             self.__highest = result.highest
+            self.__trail_ratio = result.trail_ratio
             self._trail = result.trail
 
     def query(self):

@@ -119,9 +119,16 @@ class TraderBot:
 
         if receipt["side"].lower() == "buy":
             strategy.stop_loss = TrailingStopLoss()
-            strategy.stop_loss.initialise(strategy_name=strategy.name,
-                                          symbol=strategy.symbol,
-                                          price=float(receipt["price"]))
+            if strategy.market_state == "bull":
+                strategy.stop_loss.initialise(strategy_name=strategy.name,
+                                              symbol=strategy.symbol,
+                                              price=float(receipt["price"]),
+                                              trail_ratio=0.99)
+            elif strategy.market_state == "bear":
+                strategy.stop_loss.initialise(strategy_name=strategy.name,
+                                              symbol=strategy.symbol,
+                                              price=float(receipt["price"]),
+                                              trail_ratio=0.95)
         else:
             strategy.stop_loss.close_stop_loss()
             strategy.stop_loss = None

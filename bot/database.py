@@ -14,6 +14,7 @@ class StopLoss(Base):
     asset = Column(String(250), nullable=False)
     buy_price = Column(Float, nullable=False)
     highest = Column(Float, nullable=False)
+    trail_ratio = Column(Float, nullable=False)
     trail = Column(Float, nullable=False)
     open_stop_loss = Column(Boolean, nullable=False)
 

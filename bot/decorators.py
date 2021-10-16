@@ -39,14 +39,15 @@ def check_response(func):
         if response.ok:
             return response.json()
         else:
-            with smtplib.SMTP("smtp.gmail.com") as connection:
-                connection.starttls()
-                connection.login(config.my_email, config.email_password)
-                connection.sendmail(
-                    from_addr=config.my_email,
-                    to_addrs=config.to_email,
-                    msg=f"{config.crash_mail_body} \n\nPs. Please fix the following issue:\n {response.text}."
-                )
+            if response["code"] != -1022:
+                with smtplib.SMTP("smtp.gmail.com") as connection:
+                    connection.starttls()
+                    connection.login(config.my_email, config.email_password)
+                    connection.sendmail(
+                        from_addr=config.my_email,
+                        to_addrs=config.to_email,
+                        msg=f"{config.crash_mail_body} \n\nPs. Please fix the following issue:\n {response.text}."
+                    )
             raise BinanceAccountIssue
     return wrapper
 
