@@ -46,7 +46,12 @@ class Strategy:
             if crypto.balance * price > 10:
                 print("Substantial balance found. Setting trailing stop loss.")
                 stop_loss = TrailingStopLoss()
-                stop_loss.initialise(strategy_name=self._name, symbol=self._symbol, price=price)
+
+                if self._market_state == "bull":
+                    stop_loss.initialise(strategy_name=self._name, symbol=self._symbol, price=price, trail_ratio=0.99)
+                elif self._market_state == "bear":
+                    stop_loss.initialise(strategy_name=self._name, symbol=self._symbol, price=price, trail_ratio=0.95)
+
                 return stop_loss
             else:
                 print("No substantial balance found. Not setting trailing stop loss.")
