@@ -97,13 +97,13 @@ class Strategy:
         return new_data
 
     def check_stop_loss(self):
-        if self._stop_loss:
-            price = float(get_latest_price(asset=self._symbol)["price"])
+        price = float(get_latest_price(asset=self._symbol)["price"])
 
-            if price < self._stop_loss.trail and price < self._stop_loss.buy_price:
-                print("Trailing stop loss is triggered. Crypto will be sold.")
-                return "sell"
-            self._stop_loss.adjust_stop_loss(price=price)
+        if price < self._stop_loss.trail and price < self._stop_loss.buy_price:
+            print("Trailing stop loss is triggered. Crypto will be sold.")
+            return "sell"
+        self._stop_loss.adjust_stop_loss(price=price)
+        return "continue"
 
     def check_for_signal(self):
         """Check if current data gives off a buy or sell signal"""
