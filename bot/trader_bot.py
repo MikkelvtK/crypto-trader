@@ -1,7 +1,6 @@
 import sqlalchemy
 import math
 from decorators import *
-from class_blueprints.order import Order
 from functions import format_border
 from class_blueprints.stop_loss import TrailingStopLoss
 from class_blueprints.trader import get_exchange_info, get_latest_price, post_order, query_order, cancel_order
@@ -57,11 +56,11 @@ class TraderBot:
 
     def get_coins_to_trade(self, strategy, action):
         price = float(get_latest_price(strategy.symbol)["price"])
-        rounded_price = self.get_correct_fractional_part(symbol=strategy.symbol, number=price)
         crypto = self._portfolio.query_crypto_balance(crypto=strategy.symbol)
 
         if action == "buy":
             fiat_amount = self.get_investment_amount(price=price)
+            rounded_price = self.get_correct_fractional_part(symbol=strategy.symbol, number=price*1.001)
 
             if fiat_amount:
                 crypto_coins = fiat_amount / rounded_price
@@ -72,8 +71,10 @@ class TraderBot:
                 print("The limit order places an order higher than the given fiat amount.")
 
         elif action == "sell":
+            rounded_price = self.get_correct_fractional_part(symbol=strategy.symbol, number=price*0.999)
             crypto_coins = crypto.balance
             rounded_coins = self.get_correct_fractional_part(symbol=strategy.symbol, number=crypto_coins, price=False)
+
             if rounded_coins * rounded_price >= 10:
                 return rounded_price, rounded_coins
             print("The limit order places an order higher than the given fiat amount.")
@@ -115,7 +116,6 @@ class TraderBot:
 
     def process_order(self, receipt, strategy):
         self._portfolio.update_portfolio()
-        investment = float(receipt["price"]) * float(receipt["executedQty"])
 
         if receipt["side"].lower() == "buy":
             strategy.stop_loss = TrailingStopLoss()
@@ -132,31 +132,6 @@ class TraderBot:
         else:
             strategy.stop_loss.close_stop_loss()
             strategy.stop_loss = None
-
-        order = Order(
-            order_id=receipt["orderId"],
-            symbol=receipt["symbol"].lower(),
-            price=float(receipt["price"]),
-            investment=investment,
-            coins=float(receipt["executedQty"]),
-            side=receipt["side"].lower(),
-            type=receipt["type"].lower(),
-            time=receipt["updateTime"],
-            status=receipt["status"].lower()
-        )
-
-        if receipt["side"].lower() == "buy":
-            if strategy.stop_loss:
-                stop_loss = strategy.stop_loss.query()
-                order.to_sql(engine=self.__engine, stop_loss=stop_loss)
-            else:
-                order.to_sql(engine=self.__engine)
-
-        else:
-            buy_order = order.get_last_buy_order(engine=self.__engine)
-
-            if buy_order:
-                order.to_sql(engine=self.__engine, buy_order_id=buy_order.order_id)
 
     # ----- VISUAL FEEDBACK ----- #
 
