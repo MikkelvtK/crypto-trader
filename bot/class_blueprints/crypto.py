@@ -1,7 +1,3 @@
-from sqlalchemy.orm import sessionmaker
-from database import CryptoBalance
-
-
 class Crypto:
 
     __NEGATIVE = "Number cannot be negative."
