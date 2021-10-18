@@ -170,6 +170,9 @@ class TraderBot:
                     action = None
 
                     if -1 <= (current_time % self.__timer) <= 1:
+                        if not just_posted:
+                            just_posted = True
+
                         try:
                             data, action = strategy.check_for_signal()
 
@@ -178,14 +181,16 @@ class TraderBot:
                             continue
 
                         self.print_new_data(df=data.df, strategy=strategy)
+                        self._portfolio.print_portfolio()
 
                     elif -0.5 <= (current_time % 60) <= 0.5:
+                        if not just_posted:
+                            just_posted = True
+
                         if strategy.stop_loss:
                             action = strategy.check_stop_loss()
 
                     if action:
-                        if not just_posted:
-                            just_posted = True
 
                         if action == "continue":
                             continue
@@ -196,8 +201,6 @@ class TraderBot:
                             if order_receipt["status"].lower() == "filled":
                                 self.process_order(receipt=order_receipt, strategy=strategy)
                                 self.print_new_order(action, strategy.symbol)
-
-                        self._portfolio.print_portfolio()
 
             if just_posted:
                 time.sleep(55)
