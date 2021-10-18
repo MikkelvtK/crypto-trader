@@ -39,7 +39,9 @@ def check_response(func):
         if response.ok:
             return response.json()
         else:
-            if response.json()["code"] != -1022:
+            skippable_codes = (-1022, )
+            
+            if response.json()["code"] not in skippable_codes:
                 with smtplib.SMTP("smtp.gmail.com") as connection:
                     connection.starttls()
                     connection.login(config.my_email, config.email_password)

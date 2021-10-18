@@ -86,7 +86,7 @@ class Strategy:
         return new_data
 
     def _get_bull_scenario_data(self):
-        new_data = Data(data=get_history(symbol=self._symbol, interval="15m", limit=1000))
+        new_data = Data(data=get_history(symbol=self._symbol, interval="30m", limit=1000))
         new_data.set_ema(window=8)
         new_data.set_ema(window=21)
         return new_data

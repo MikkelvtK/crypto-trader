@@ -17,7 +17,7 @@ class TraderBot:
         self._name = name
         self._strategies = strategies
         self._portfolio = portfolio
-        self.__timer = 900
+        self.__timer = 1800
         self.__engine = sqlalchemy.create_engine(f"sqlite:///{config.db_path}")
 
     # ----- HANDLING DATA ----- #
