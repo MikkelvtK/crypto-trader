@@ -200,5 +200,5 @@ class TraderBot:
                         self._portfolio.print_portfolio()
 
             if just_posted:
-                time.sleep(self.__timer - 20)
+                time.sleep(55)
                 just_posted = False
