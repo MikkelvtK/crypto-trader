@@ -164,34 +164,40 @@ class TraderBot:
         while True:
             current_time = time.time()
 
-            if -1 <= (current_time % self.__timer) <= 1:
-                if not just_posted:
-                    just_posted = True
+            if -1 <= (current_time % 60) <= 1:
 
                 for strategy in self._strategies:
-                    try:
-                        data, action = strategy.check_for_signal()
+                    action = None
 
-                    except TypeError:
-                        print("Something went wrong. Continuing")
-                        continue
+                    if -1 <= (current_time % self.__timer) <= 1:
+                        try:
+                            data, action = strategy.check_for_signal()
 
-                    self.print_new_data(df=data.df, strategy=strategy)
+                        except TypeError:
+                            print("Something went wrong. Continuing")
+                            continue
 
-                    if action == "continue" and strategy.stop_loss:
-                        action = strategy.check_stop_loss()
+                        self.print_new_data(df=data.df, strategy=strategy)
 
-                    if action == "continue":
-                        continue
+                    elif -0.5 <= (current_time % 60) <= 0.5:
+                        if strategy.stop_loss:
+                            action = strategy.check_stop_loss()
 
-                    order_receipt = self.place_limit_order(symbol=strategy.symbol, action=action, strategy=strategy)
+                    if action:
+                        if not just_posted:
+                            just_posted = True
 
-                    if order_receipt:
-                        if order_receipt["status"].lower() == "filled":
-                            self.process_order(receipt=order_receipt, strategy=strategy)
-                            self.print_new_order(action, strategy.symbol)
+                        if action == "continue":
+                            continue
 
-                self._portfolio.print_portfolio()
+                        order_receipt = self.place_limit_order(symbol=strategy.symbol, action=action, strategy=strategy)
+
+                        if order_receipt:
+                            if order_receipt["status"].lower() == "filled":
+                                self.process_order(receipt=order_receipt, strategy=strategy)
+                                self.print_new_order(action, strategy.symbol)
+
+                        self._portfolio.print_portfolio()
 
             if just_posted:
                 time.sleep(self.__timer - 20)
