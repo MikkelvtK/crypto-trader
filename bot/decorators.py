@@ -5,7 +5,7 @@ import time
 import functools
 import config
 import smtplib
-import pandas as pd
+from class_blueprints.exceptions import BinanceAccountIssue
 
 
 def connection_authenticator(func):
@@ -39,41 +39,20 @@ def check_response(func):
         if response.ok:
             return response.json()
         else:
-            with smtplib.SMTP("smtp.gmail.com") as connection:
-                connection.starttls()
-                connection.login(config.my_email, config.email_password)
-                connection.sendmail(
-                    from_addr=config.my_email,
-                    to_addrs=config.to_email,
-                    msg=config.crash_mail_body
-                )
-            sys.exit(f"Something is wrong. Please fix the following issue:\n {response.text}")
-    return wrapper
-
-
-def add_border(func):
-    """Add a border to message"""
-    def wrapper(*args, **kwargs):
-        data = func(*args, **kwargs)
-
-        # Add border for each row in message
-        for i in range(len(data) + 1):
+            skippable_codes = (-1022, )
             try:
-                text = data[i]
-            except IndexError:
-                text = ""
-
-            left_border = "<-----------------------"
-            right_border = ""
-
-            if isinstance(text, pd.Series):
-                print(text)
-            else:
-                while len(left_border + text + right_border) < 80:
-                    right_border += "-"
-
-                print(left_border + text + right_border + ">")
-
+                if response.json()["code"] not in skippable_codes:
+                    with smtplib.SMTP("smtp.gmail.com") as connection:
+                        connection.starttls()
+                        connection.login(config.my_email, config.email_password)
+                        connection.sendmail(
+                            from_addr=config.my_email,
+                            to_addrs=config.to_email,
+                            msg=f"{config.crash_mail_body} \n\nPs. Please fix the following issue:\n {response.text}."
+                        )
+            except NameError:
+                print("No email given. No message will be send.")
+            raise BinanceAccountIssue
     return wrapper
 
 

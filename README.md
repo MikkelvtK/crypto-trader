@@ -1,18 +1,14 @@
 # Crypto Trading Bot
 
-A bot that uses the Binance API to place trade orders using predefined strategies.
+A bot that uses the Binance API to place trade orders using a predefined strategy.
 
 ## Description
 
-The bot uses a combination of strategies to place trade orders on assets using the Binance Api.
+The bot uses a crossing EMA with a 4h interval to determine which strategy to use.
 
-The strategies used are:
-* Crossing moving averages (MA). MA1 is calculated over 40 intervals and MA2 is calculated over 170 intervals. 
-  The interval is 4 hours.
-* RSI dips. When the RSI dips below 30 the bot will place a buy order and hold it until the RSI is back to 40 
-  or when 5 intervals have passed. Whichever comes first. The interval used is 1 hour.
-* Bollinger Bands. When the price drops below the lower Bollinger band, and the RSI is below 30 the bot will place a buy order.
-  The asset sells when the price reaches the upper Bollinger band or when the trailing stop loss triggers. 
+* If EMA_50 > EMA200: Will use a trend strategy by using crossing EMA's using fibonacci numbers for the lengths (8 and 21).
+* If EMA_50 < EMA200: Will use an RSI dip strategy to catch exceptional opportunities. 
+* Uses a trailing stop loss to minimise losses. 
 
 ## Getting Started
 
@@ -27,27 +23,35 @@ The project will mostly run out of the box. Just a few things need to be done.
 * Clone the project.
 * Create a config.py
 * To the config.py add:
-  * Binance API and secret
+  * Binance API, secret and header
   * Command to restart bot
   * path to databases
+  * Settings for the bot
+
 ```
+FIAT_MARKTET = fiat market you want to use ie. "eur" (lower case).
+CRYPTOS = [Crypos, you, want, to, trade] (ie. "btc", "eth")
+USER = your_username
+BOT_NAME = your_bot_name
+
 command = your_command_to_restart
 apiKey = your_api_key
 apiSecret = your_api_secret
+header = {"X-MBX-APIKEY": apiKey}
 db_path = your_database_path
+
+
 ```
 * Create data folder.
 * Run database.py once to create the database and tables.
-* Change the assets you want to trade in main.py if you want (must maintain list datatype):
-```
-assets=["veteur", "adaeur"]
-```
-* If you want to leave out any strategy you can remove them from the tuple in main.py:
-```
-strategies = (crossing_sma, bottom_rsi, bollinger)
-```
+
 
 ### Newest Release:
+V0.3:
+* Almost completely rewrites the code of the bot to optimise processes and cutting cpu usage by 33%.
+* Uses a new class for user's portfolio, crypto assets and rewrites the strategy class.
+* Cut the bot class nearly in half for clearer reading of the code.
+
 v0.2.5:
 * Rebalances long term positions with new deposits or profit made from other trades
 

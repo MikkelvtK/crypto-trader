@@ -1,5 +1,5 @@
 import pytest
-from decorators import *
+from bot.decorators import *
 
 
 @timer_decorator
@@ -19,18 +19,18 @@ def test_reading_active_stop_losses(bot_stop_loss):
 @timer_decorator
 def test_analysing_data(dataset1, dataset2):
     bot2 = dataset2[0]
-    action1 = dataset1[0].analyse_new_data(dataset1[1], "ETHUSDT", dataset1[0].strategies[0])
-    action2 = dataset2[0].analyse_new_data(dataset2[1], "ETHUSDT", dataset2[0].strategies[2])
+    action1 = dataset1[0].analyse_new_data(dataset1[1], "ETHUSDT", dataset1[0]._strategies[0])
+    action2 = dataset2[0].analyse_new_data(dataset2[1], "ETHUSDT", dataset2[0]._strategies[2])
     assert action1 == "buy"
-    assert bot2.active_stop_losses[bot2.strategies[2].name]["ETHUSDT"].trail == dataset2[1]["Price"].iloc[-1] * 0.95
+    assert bot2.active_stop_losses[bot2._strategies[2].name]["ETHUSDT"].trail == dataset2[1]["Price"].iloc[-1] * 0.95
     assert action2 is None
 
 
 @timer_decorator
 def test_determine_investment_amount(bot_budget):
     bot_budget.available_to_invest = bot_budget.calculate_available_budget()
-    investment_hodl = bot_budget.determine_investment_amount(bot_budget.strategies[0])
-    investment_rsi = bot_budget.determine_investment_amount(bot_budget.strategies[1])
+    investment_hodl = bot_budget.determine_investment_amount(bot_budget._strategies[0])
+    investment_rsi = bot_budget.determine_investment_amount(bot_budget._strategies[1])
     assert investment_rsi == 175
     assert investment_hodl is None
 
@@ -38,9 +38,9 @@ def test_determine_investment_amount(bot_budget):
 @timer_decorator
 def test_prepare_order(bot_budget):
     bot_budget.available_to_invest = bot_budget.calculate_available_budget()
-    investment = bot_budget.prepare_order("btcusdt", bot_budget.strategies[1], "buy")
-    sell_quantity = bot_budget.prepare_order("btcusdt", bot_budget.strategies[0], "sell")
-    do_nothing = bot_budget.prepare_order("btcusdt", bot_budget.strategies[0], None)
+    investment = bot_budget.prepare_order("btcusdt", bot_budget._strategies[1], "buy")
+    sell_quantity = bot_budget.prepare_order("btcusdt", bot_budget._strategies[0], "sell")
+    do_nothing = bot_budget.prepare_order("btcusdt", bot_budget._strategies[0], None)
     assert investment == 175
     assert sell_quantity == 1
     assert do_nothing is None

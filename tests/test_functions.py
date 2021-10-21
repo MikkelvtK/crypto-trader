@@ -1,4 +1,4 @@
-from functions import calc_correct_quantity
+from bot.functions import calc_correct_quantity
 
 
 def test_true_order_quantity(test_bot):
