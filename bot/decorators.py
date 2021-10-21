@@ -40,16 +40,18 @@ def check_response(func):
             return response.json()
         else:
             skippable_codes = (-1022, )
-            
-            if response.json()["code"] not in skippable_codes:
-                with smtplib.SMTP("smtp.gmail.com") as connection:
-                    connection.starttls()
-                    connection.login(config.my_email, config.email_password)
-                    connection.sendmail(
-                        from_addr=config.my_email,
-                        to_addrs=config.to_email,
-                        msg=f"{config.crash_mail_body} \n\nPs. Please fix the following issue:\n {response.text}."
-                    )
+            try:
+                if response.json()["code"] not in skippable_codes:
+                    with smtplib.SMTP("smtp.gmail.com") as connection:
+                        connection.starttls()
+                        connection.login(config.my_email, config.email_password)
+                        connection.sendmail(
+                            from_addr=config.my_email,
+                            to_addrs=config.to_email,
+                            msg=f"{config.crash_mail_body} \n\nPs. Please fix the following issue:\n {response.text}."
+                        )
+            except NameError:
+                print("No email given. No message will be send.")
             raise BinanceAccountIssue
     return wrapper
 

@@ -31,9 +31,16 @@ class Crypto:
     # ----- CLASS METHODS ----- #
 
     def get_symbol(self):
+        """Combines the crypto and fiat to return symbol used for trades."""
         return self._crypto + self.__fiat
 
     def update_balance(self, data):
+        """
+        Updates the balance of the crypto currently in the user's account.
+
+        :param data: (dict) Takes a response from Account Information endpoint of the Binance API. It will search for
+        the crypto in the response and update the class attribute.
+        """
         for balance in data["balances"]:
             if balance["asset"].lower() == self._crypto:
                 self._balance = float(balance["free"])

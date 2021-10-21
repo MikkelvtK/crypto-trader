@@ -23,8 +23,16 @@ class TraderBot:
     # ----- HANDLING DATA ----- #
 
     @staticmethod
-    def get_correct_fractional_part(symbol, number, price=True):
-        """Get the step size for crypto currencies used by the _api"""
+    def get_correct_fractional_part(symbol, quantity, price=True):
+        """
+        Determines how many numbers the fractional part of the quantity may have according to Binance API rules.
+
+        :param symbol: (str) The symbol of the asset of which the interval needs to be retrieved.
+        :param quantity: (float) The number that needs to be adjusted according to Binance API rules.
+        :param price: (float) Tells method if it's dealing with the price of an asset or with an amount of coins.
+        Default is True.
+        :return: The adjusted quantity.
+        """
         symbol_info = get_exchange_info(symbol)["symbols"][0]
 
         if price:
@@ -37,13 +45,18 @@ class TraderBot:
         step_size = lot_size_filter[step_type].find("1") - 1
 
         if step_size < 0:
-            return math.floor(number)
-        return math.floor(number * 10 ** step_size) / 10 ** step_size
+            return math.floor(quantity)
+        return math.floor(quantity * 10 ** step_size) / 10 ** step_size
 
     # ----- SETUP FOR ORDERS ----- #
 
     def get_investment_amount(self, price):
-        """Checks if there is any available currency in current balance to invest"""
+        """
+        Calculates how much can be invested in an asset.
+
+        :param price: (float) The current price of the asset.
+        :return: The investment amount if possible. Returns none if nothing can be invested.
+        """
 
         if self._portfolio.fiat_balance < 10:
             return
@@ -55,25 +68,38 @@ class TraderBot:
             return investment
 
     def get_coins_to_trade(self, strategy, action):
+        """
+        Determines the rounded amount according to Binance API rules to place for a limit order.
+
+        :param strategy: The strategy object that is currently used.
+        :param action: (str) The actions in string format that the limit order will execute. Can be
+        either "buy" or "sell".
+        :return: (tuple) Returns the price and asset quantity; ready to be used for the order.
+        """
+
         price = float(get_latest_price(strategy.symbol)["price"])
         crypto = self._portfolio.query_crypto_balance(crypto=strategy.symbol)
 
         if action == "buy":
             fiat_amount = self.get_investment_amount(price=price)
-            rounded_price = self.get_correct_fractional_part(symbol=strategy.symbol, number=price*1.001)
+
+            # Will place the buy price slightly above the current price to make sure the limit order will be executed.
+            rounded_price = self.get_correct_fractional_part(symbol=strategy.symbol, quantity=price * 1.001)
 
             if fiat_amount:
                 crypto_coins = fiat_amount / rounded_price
-                rounded_coins = self.get_correct_fractional_part(symbol=strategy.symbol,
-                                                                 number=crypto_coins, price=False)
+                rounded_coins = self.get_correct_fractional_part(symbol=strategy.symbol, quantity=crypto_coins,
+                                                                 price=False)
                 if (rounded_coins * rounded_price) <= fiat_amount:
                     return rounded_price, rounded_coins
                 print("The limit order places an order higher than the given fiat amount.")
 
         elif action == "sell":
-            rounded_price = self.get_correct_fractional_part(symbol=strategy.symbol, number=price*0.999)
+
+            # Will place the buy price slightly below the current price to make sure the limit order will be executed.
+            rounded_price = self.get_correct_fractional_part(symbol=strategy.symbol, quantity=price * 0.999)
             crypto_coins = crypto.balance
-            rounded_coins = self.get_correct_fractional_part(symbol=strategy.symbol, number=crypto_coins, price=False)
+            rounded_coins = self.get_correct_fractional_part(symbol=strategy.symbol, quantity=crypto_coins, price=False)
 
             if rounded_coins * rounded_price >= 10:
                 return rounded_price, rounded_coins
@@ -82,7 +108,14 @@ class TraderBot:
     # ----- PLACE ORDERS ----- #
 
     def place_limit_order(self, symbol, action, strategy):
-        """Place limit order"""
+        """
+        Places a limit order with the Binance API.
+
+        :param symbol: (str) The symbol of the asset that is to be traded.
+        :param action: (str) The action that the limit order will execute. Can be either "buy" or "sell".
+        :param strategy: (object) The strategy that is currently used.
+        :return: (dict) Returns the receipt (response from Binance API) in a dictionary.
+        """
 
         try:
             price, crypto_coins = self.get_coins_to_trade(strategy=strategy, action=action)
@@ -96,6 +129,8 @@ class TraderBot:
                                      quantity_type="quantity", amount=crypto_coins)
                 confirmation = query_order(asset_symbol=symbol, order_id=receipt["orderId"])
 
+                # Will check if the limit order is filled. After a certain amount of time it will cancel the
+                # order and try again.
                 for _ in range(2):
                     if confirmation["status"].lower() == "filled":
                         return confirmation
@@ -115,6 +150,13 @@ class TraderBot:
                     return self.place_limit_order(symbol=symbol, action=action, strategy=strategy)
 
     def process_order(self, receipt, strategy):
+        """
+        Will process the order and adjust all attributes if the order is filled.
+
+        :param receipt: (dict) The receipt response of the limit order from Binance API.
+        :param strategy: (object The strategy that is currently used.
+        """
+
         self._portfolio.update_portfolio()
 
         if receipt["side"].lower() == "buy":
@@ -137,12 +179,24 @@ class TraderBot:
 
     @staticmethod
     def print_new_data(df, strategy):
-        """Print new data result"""
+        """
+        Prints the new data in the terminal for visual feedback to the user.
+
+        :param df: (DataFrame) A pandas dataframe containing latest price data of an asset.
+        :param strategy: (object) Strategy object currently being used.
+        """
+
         format_border(f"CURRENT MARKET STATE FOR {strategy.symbol.upper()}: {strategy.market_state.upper()}")
         print(f"\n{df.iloc[-1, :]}\n")
 
     def print_new_order(self, action, symbol):
-        """Print when order is placed"""
+        """
+        Prints the new order that was placed with the new balances that changed with it.
+
+        :param action: (str) The action that the limit order will execute. Can be either "buy" or "sell".
+        :param symbol: (str) The symbol of the asset that was traded.
+        """
+
         new_balance = self._portfolio.fiat_balance
         crypto = self._portfolio.query_crypto_balance(crypto=symbol)
         format_border(f"{action.upper()} ORDER PLACED FOR {symbol.upper()}")
@@ -152,7 +206,7 @@ class TraderBot:
     # ----- ON/OFF BUTTON ----- #
 
     def activate(self):
-        """Activate the bot"""
+        """Activate the main loop of the bot"""
         just_posted = False
 
         for symbol, crypto in self._portfolio.crypto_balances.items():

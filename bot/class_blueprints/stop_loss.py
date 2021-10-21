@@ -17,6 +17,23 @@ class TrailingStopLoss:
         self._trail = None
         self.__open = True
 
+    def initialise(self, strategy_name, symbol, price, trail_ratio):
+        """
+        Second constructor.
+
+        :param strategy_name: (str)
+        :param symbol: (str)
+        :param price: (float)
+        :param trail_ratio: (float)
+        """
+        self.__strategy_name = strategy_name
+        self.__asset = symbol
+        self._buy_price = price
+        self.__highest = price
+        self.__trail_ratio = trail_ratio
+        self._trail = self.__highest * self.__trail_ratio
+        self.__to_sql(update=False)
+
     @property
     def buy_price(self):
         return self._buy_price
@@ -28,18 +45,31 @@ class TrailingStopLoss:
     # ----- CLASS METHODS ----- #
 
     def adjust_stop_loss(self, price):
-        """Adjust current highest point of the trailing stop loss if needed."""
+        """
+        Checks if the current price is higher than the current highest and adjusts the trailing stop loss accordingly.
+
+        :param price: (float) The latest price of the asset.
+        """
+
         if price > self.__highest:
             self.__highest = price
             self._trail = self.__highest * self.__trail_ratio
             self.__to_sql(update=True)
 
     def close_stop_loss(self):
+        """
+        Closes the trailing stop loss when the asset is sold.
+        """
+
         self.__open = False
         self.__to_sql(update=True)
 
     def __to_sql(self, update=False):
-        """Save a newly activated trailing stop loss"""
+        """
+        Saves the trailing stop loss in a SQL database for when the bot needs to be rebooted.
+        :param update: (bool) To determine if the trailing stop loss already exists and merely needs to be updated.
+        """
+
         session = sessionmaker(self.__engine)
 
         with session() as connection:
@@ -65,16 +95,13 @@ class TrailingStopLoss:
 
             connection.commit()
 
-    def initialise(self, strategy_name, symbol, price, trail_ratio):
-        self.__strategy_name = strategy_name
-        self.__asset = symbol
-        self._buy_price = price
-        self.__highest = price
-        self.__trail_ratio = trail_ratio
-        self._trail = self.__highest * self.__trail_ratio
-        self.__to_sql(update=False)
-
     def load(self, symbol):
+        """
+        Loads the trailing stop loss from the database.
+
+        :param symbol: (str) Symbol of the asset that needs to be queried.
+        """
+
         session = sessionmaker(self.__engine)
 
         with session() as connection:

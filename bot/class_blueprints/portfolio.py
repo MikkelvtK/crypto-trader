@@ -40,6 +40,10 @@ class Portfolio:
     # ----- CLASS METHODS ----- #
 
     def update_portfolio(self):
+        """
+        Updates all the crypto balances in the portfolio.
+        """
+
         data = get_balance()
 
         for balance in data["balances"]:
@@ -50,18 +54,34 @@ class Portfolio:
             crypto.update_balance(data=data)
 
     def query_crypto_balance(self, crypto):
+        """
+        Queries portfolio and returns the crypto object that was requested.
+
+        :param crypto: (str) The asset that is requested.
+        :return: (object) Crypto object.
+        """
+
         return self._crypto_balances[crypto]
 
     def get_active_balances_count(self, price):
-        k = 0
+        """
+        Returns the number of balances in the portfolio that have a substantial amount of coins.
 
+        :param price: (float) The latest price of the asset.
+        :return: (int) Returns number of active balances.
+        """
+
+        k = 0
         for symbol, crypto in self._crypto_balances.items():
             if crypto.balance * price > 10:
                 k += 1
-
         return k
 
     def print_portfolio(self):
+        """
+        Prints the the information of the user's portfolio.
+        """
+
         format_border(f"PORTFOLIO {self._owner.upper()}")
         print(f"\nCurrent fiat balance: {round(self._fiat_balance, 2)} {self._fiat.upper()}.")
 

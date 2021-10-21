@@ -41,6 +41,13 @@ class Strategy:
         self._stop_loss = action
 
     def _set_stop_loss(self, crypto):
+        """
+        A setter to set the _stop_loss attribute when first initialising the class.
+
+        :param crypto: (object) The crypto object for which the strategy is used.
+        :return: (object) Returns trailing stop loss object or none when no trailing stop loss is active.
+        """
+
         try:
             stop_loss = TrailingStopLoss()
             stop_loss.load(symbol=self._symbol)
