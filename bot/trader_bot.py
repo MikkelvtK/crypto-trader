@@ -165,7 +165,7 @@ class TraderBot:
                 strategy.stop_loss.initialise(strategy_name=strategy.name,
                                               symbol=strategy.symbol,
                                               price=float(receipt["price"]),
-                                              trail_ratio=0.98)
+                                              trail_ratio=0.95)
             elif strategy.market_state == "bear":
                 strategy.stop_loss.initialise(strategy_name=strategy.name,
                                               symbol=strategy.symbol,
