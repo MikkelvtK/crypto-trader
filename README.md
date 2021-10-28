@@ -30,7 +30,7 @@ The project will mostly run out of the box. Just a few things need to be done.
 
 ```
 FIAT_MARKTET = fiat market you want to use ie. "eur" (lower case).
-CRYPTOS = [Crypos, you, want, to, trade] (ie. "btc", "eth")
+CRYPTOS = {Crypos, you, want, to, trade} (abbreviation: full name ie. {"btc": "bitcoin"})
 USER = your_username
 BOT_NAME = your_bot_name
 
