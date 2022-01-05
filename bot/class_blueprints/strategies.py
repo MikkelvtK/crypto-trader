@@ -139,7 +139,7 @@ class Strategy:
             if bear_data.df["RSI"].iloc[-1] <= 30 and not self._stop_loss:
                 return bear_data, "buy"
 
-            elif bear_data.df["RSI"].iloc[-1] >= 35 and self._stop_loss:
+            elif bear_data.df["RSI"].iloc[-1] >= 40 and self._stop_loss:
                 return bear_data, "sell"
 
             return bear_data, "continue"
