@@ -237,13 +237,6 @@ class TraderBot:
                         self.print_new_data(df=data.df, strategy=strategy)
                         self._portfolio.print_portfolio()
 
-                    elif -0.5 <= (current_time % 60) <= 0.5:
-                        if not just_posted:
-                            just_posted = True
-
-                        if strategy.stop_loss:
-                            action = strategy.check_stop_loss()
-
                     if action:
 
                         if action == "continue":
@@ -253,7 +246,6 @@ class TraderBot:
 
                         if order_receipt:
                             if order_receipt["status"].lower() == "filled":
-                                self.process_order(receipt=order_receipt, strategy=strategy)
                                 self.print_new_order(action, strategy.symbol)
 
             if just_posted:

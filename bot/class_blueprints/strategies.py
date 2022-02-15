@@ -116,30 +116,12 @@ class Strategy:
         """Check if current data gives off a buy or sell signal"""
         data = self._get_market_state_data()
 
-        if data.df["EMA_50"].iloc[-1] > data.df["EMA_200"].iloc[-1]:
+        if data.df["EMA_50"].iloc[-1] > data.df["EMA_200"].iloc[-1] and self._market_state == "bear":
             self._market_state = "bull"
+            return data, "buy"
 
-            bull_data = self._get_bull_scenario_data()
-            price = bull_data.df["Price"].iloc[-1]
-
-            if bull_data.df["EMA_8"].iloc[-1] > bull_data.df["EMA_21"].iloc[-1] and not self._stop_loss:
-                return bull_data, "buy"
-
-            elif bull_data.df["EMA_8"].iloc[-1] < bull_data.df["EMA_21"].iloc[-1] and self._stop_loss:
-                if price > self._stop_loss.buy_price:
-                    return bull_data, "sell"
-
-            return bull_data, "continue"
-
-        elif data.df["EMA_50"].iloc[-1] < data.df["EMA_200"].iloc[-1]:
+        elif data.df["EMA_50"].iloc[-1] < data.df["EMA_200"].iloc[-1] and self._market_state == "bull":
             self._market_state = "bear"
+            return data, "sell"
 
-            bear_data = self._get_bear_scenario_data()
-
-            if bear_data.df["RSI"].iloc[-1] <= 30 and not self._stop_loss:
-                return bear_data, "buy"
-
-            elif bear_data.df["RSI"].iloc[-1] >= 40 and self._stop_loss:
-                return bear_data, "sell"
-
-            return bear_data, "continue"
+        return data, "continue"
